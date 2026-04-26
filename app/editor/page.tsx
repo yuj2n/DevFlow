@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react"; // 제목 관리를 위해 추가
+import { useDocStore } from "@/store/useDocStore";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 export default function EditorPage() {
-  const [title, setTitle] = useState("Untitled Document"); // 제목 상태 관리
+  const { title, setTitle } = useDocStore();
 
   const editor = useEditor({
     extensions: [StarterKit],
