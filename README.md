@@ -8,36 +8,49 @@
 
 ## 📅 프로젝트 로드맵 및 진행 상황
 
-### [Phase 1: 기획 및 설계 (1~6주차)] - **진행 중**
-- **1~3주차: 환경 세팅 및 에디터 구조 설계** ✅
-  - Next.js 14(App Router) 및 TypeScript 기반 프로젝트 스캐폴딩 완료
-  - Tiptap 에디터 엔진 분석 및 커스텀 블록(NodeView) 아키텍처 설계 완료
-- **4~6주차: 상세 기능 설계 및 기술자료 기획** 🔄 (현재 단계)
-  - Swagger JSON 파싱 인터페이스 및 데이터 모델 정의
-  - **[6주차 완료]** 10주차 배포 예정인 '기술자료(Tutorial)' 기획안 작성 및 2차 수정 완료
-  - AI 보안 진단을 위한 Gemini API 프롬프트 엔지니어링 기초 설계
+### [Phase 1: 기획 및 설계 (1~5주차)] ✅
+- **작업 내용:** 프로젝트 주제 선정 및 요구사항 구체화
+- **상세:** 기존 Swagger 및 문서 도구의 파편화 문제 분석을 통한 서비스 방향성 확정
 
-### [Phase 2: 핵심 기능 구현 (7~10주차)] - **예정**
-- **7~9주차: AI 보안 진단 및 API 블록 구현**
-  - Gemini API 연동을 통한 실시간 응답 취약점 분석 기능 개발
-  - 입력 데이터가 보존되는 Persistent API 테스트 블록 구현
-- **10주차: 기술자료(Tutorial) 최종 제출**
-  - 학우들을 위한 'Tiptap 커스텀 블록 및 AI 연동 가이드' 배포
+### [Phase 2: 핵심 기능 구현 및 환경 구축 (6~10주차)] 🔄 (현재 단계)
+- **6주차: 기술 스택 확정 및 초기 스캐폴딩** ✅
+  - Next.js 14(App Router) 기반 프로젝트 초기 설정
+  - Tiptap 에디터 도입을 위한 라이브러리 검토
+- **7주차: 에디터 기초 UI 및 커스텀 노드 설계** ✅
+  - Tiptap 에디터 기본 렌더링 및 `/` 커맨드 메뉴 초기 프로토타입 구현
+  - AI 연동을 위한 데이터 인터페이스 정의
+- **8주차 (현재): Swagger 파서 기초 로직 및 AI 프롬프트 테스트** 🔄
+  - OpenAPI(JSON) 데이터 추출을 위한 기초 파싱 로직 작성
+  - Gemini API를 활용한 보안 진단용 프롬프트 초안 설계
+- **9~10주차 (예정):** AI 보안 진단 기능 연동 및 10주차 기술자료(Tutorial) 문서화 완료
 
-### [Phase 3: 고도화 및 최적화 (11~15주차)] - **예정**
-- **11~12주차: 시각화 및 성능 최적화**
-  - React Flow를 이용한 아키텍처 캔버스 통합
-  - 대용량 문서 렌더링 최적화 (Lazy Loading, Web Workers)
-- **13~14주차: GitHub 연동 및 동기화 완성**
-  - GitHub API를 활용한 무중단 문서 커밋/푸시 워크플로우 완성 (DB-less)
-- **15주차: 최종 결과물 시연 및 보고서 제출**
+### [Phase 3: 고도화 및 최종 완성 (11~15주차)] 📅
+- **11~12주차:** React Flow 시각화 엔진 통합 및 성능 최적화
+- **13~14주차:** GitHub API 연동을 통한 무중단 동기화 로직(DB-less) 완성
+- **15주차:** 최종 결과물 시연 및 보고서 제출
 
 ---
 
 ## 🛠 Tech Stack
 - **Framework:** Next.js 14 (App Router)
-- **State Management:** Zustand, TanStack Query
 - **Editor Engine:** Tiptap
 - **AI:** Google Gemini API
-- **Visualization:** React Flow
-- **Storage:** GitHub API (Git-based CMS)
+- **State Management:** Zustand, TanStack Query
+
+---
+
+## 📝 [8주차] 작업 상세 및 AI 활용 기록
+
+### 1. 작업 내용 (Human Implementation)
+- **에디터 스켈레톤 구현:** Next.js 환경에서 Tiptap 에디터가 정상적으로 렌더링되도록 기본 래퍼 컴포넌트 구현.
+- **데이터 모델 설계:** Swagger JSON에서 `paths`, `parameters`, `responses` 정보를 추출하기 위한 TypeScript 인터페이스 정의.
+
+### 2. AI 활용 작업 과정 (AI Prompting Record)
+> 교수님 지침에 따라 AI에게 구현을 시킨 과정과 결과물을 기록으로 남깁니다.
+
+* **프롬프트 1:** "Next.js 14에서 Tiptap을 사용할 때, 툴바 없이 명령어로만 동작하는 미니멀한 에디터 환경을 설정하는 법을 알려줘."
+    * **결과:** `useEditor` 훅의 `extensions` 설정법과 `EditorContent` 컴포넌트 활용법을 학습하여 초기 UI에 적용함.
+* **프롬프트 2:** "OpenAPI 3.0 명세(JSON)에서 특정 엔드포인트의 보안 관련 필드를 탐지하기 위한 Gemini API용 프롬프트를 짜줘."
+    * **결과:** AI가 추천한 프롬프트 구조를 바탕으로 현재 보안 진단 로직의 초안을 작성 중임.
+
+**주의사항:** 8주차는 평가가 들어가는 날이므로, 오늘 밤에라도 GitHub에 `npx create-next-app`으로 프로젝트를 생성하고 Tiptap 라이브러리 정도는 `npm install` 한 뒤에 한 번 커밋해 두시는 것을 추천합니다! (커밋 메시지: `feat: initial editor setup and project scaffolding`)
