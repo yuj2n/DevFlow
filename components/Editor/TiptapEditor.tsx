@@ -2,6 +2,11 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+
+// 하이라이팅 엔진 설정
+const lowlight = createLowlight(common);
 
 interface TiptapEditorProps {
   content: string;
@@ -10,16 +15,29 @@ interface TiptapEditorProps {
 
 export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      // 기본 StarterKit을 불러오되...
+      StarterKit.configure({
+        // 기본 코드 블록 기능은 off(충돌 방지)
+        codeBlock: false,
+      }),
+      // 대신 하이라이팅 기능 사용
+      CodeBlockLowlight.configure({
+        lowlight,
+      }),
+    ],
     immediatelyRender: false,
     content: content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    // components/Editor/TiptapEditor.tsx
+
     editorProps: {
       attributes: {
         class:
-          "prose prose-blue prose-lg max-w-none focus:outline-none min-h-[500px] p-10",
+          "prose prose-slate max-w-none focus:outline-none min-h-[500px] p-10",
+        spellcheck: "false",
       },
     },
   });

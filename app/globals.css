@@ -1,8 +1,13 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-pretendard:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, sans-serif;
 }
 
 @theme inline {
@@ -22,5 +27,73 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-pretendard);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.015em;
+  line-height: 1.6;
 }
+
+.prose {
+  font-family: var(--font-pretendard);
+  color: #334155; /* 눈이 편하게 */
+}
+
+/* app/globals.css 맨 밑에 붙여넣으세요 */
+
+/* 1. 코드 블록 전체 컨테이너 설정 */
+.prose pre {
+  background-color: #1e2227 !important; /* One Dark 테마 배경색 */
+  padding: 1.5rem !important;
+  border-radius: 0.75rem !important;
+  line-height: 1.7 !important;
+  border: 1px solid #3e4451;
+}
+
+/* 2. 내부 코드 텍스트 기본 설정 */
+.prose pre code {
+  font-size: 0.9rem !important;
+  color: #abb2bf !important; /* 기본 회색 텍스트 */
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* 3. 예시 이미지처럼 알록달록하게 만들기 (핵심!) */
+.prose pre code .hljs-keyword,
+.prose pre code .hljs-selector-tag {
+  color: #c678dd !important;
+  font-weight: 600 !important;
+} /* 보라 */
+
+.prose pre code .hljs-function,
+.prose pre code .hljs-title.function_ {
+  color: #61afef !important;
+} /* 파랑 */
+
+.prose pre code .hljs-string {
+  color: #98c379 !important;
+} /* 초록 */
+
+.prose pre code .hljs-number,
+.prose pre code .hljs-literal {
+  color: #d19a66 !important;
+} /* 주황 */
+
+.prose pre code .hljs-name,
+.prose pre code .hljs-tag .hljs-name {
+  color: #e06c75 !important;
+} /* 빨강 (태그 이름) */
+
+.prose pre code .hljs-attr,
+.prose pre code .hljs-attribute {
+  color: #d19a66 !important;
+} /* 황갈색 (속성) */
+
+.prose pre code .hljs-comment {
+  color: #5c6370 !important;
+  font-style: italic !important;
+} /* 주석 */
+
+.prose pre code .hljs-params {
+  color: #abb2bf !important;
+} /* 매개변수 */

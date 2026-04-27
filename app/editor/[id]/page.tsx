@@ -42,11 +42,11 @@ export default function EditorPage() {
             ← 목록
           </Link>
           <span className="text-slate-200">|</span>
-          <span className="font-black text-xl text-blue-600 tracking-tighter">
-            DevFlow
+          <span className="font-black text-xl  tracking-tighter">
+            Dev<span className="text-blue-600">Flow</span>
           </span>
-          <span className="text-slate-200">|</span>
 
+          <span className="text-slate-200">|</span>
           {/* 제목 수정 Input: 여기서 제목을 바꾸면 Zustand에 즉시 반영됩니다 */}
           <input
             type="text"
