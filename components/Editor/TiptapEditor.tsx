@@ -43,7 +43,7 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
   });
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
       <div className="bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex gap-2">
         <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
