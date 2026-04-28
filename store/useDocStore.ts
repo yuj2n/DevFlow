@@ -24,7 +24,7 @@ export const useDocStore = create<DocState>()(
         const newDoc = {
           id: newId,
           title: "제목 없는 문서",
-          content: "<h1>새로운 문서를 작성해 보세요.</h1>",
+          content: "<h3>새로운 문서를 작성해 보세요.</h3>",
           updatedAt: new Date().toLocaleDateString(),
         };
         set((state) => ({ documents: [newDoc, ...state.documents] }));
