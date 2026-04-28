@@ -34,103 +34,90 @@ body {
   line-height: 1.6;
 }
 
+/* --- 에디터 본문(prose) 공통 설정 --- */
 .prose {
   font-family: var(--font-pretendard);
+  color: #1a1a1a !important; /* 글씨색 더 진하게 고정 */
+  max-width: none !important;
 }
 
-html body .prose ol > li::marker {
-  color: #000000 !important; /* 희끄무리한 색을 완전 검정으로 */
-
-  font-size: 1.1em !important;
+/* 1. 일반 문단(p) 간격: 평소엔 아주 촘촘하게 */
+html body .prose p {
+  line-height: 1.5 !important;
 }
 
-/* 2. 숫자 리스트 전체 여백 조절 (ul과 동일하게 촘촘하게) */
+/* 2. 리스트(ul, ol): 작성 시에만 위아래 여백을 줘서 본문과 분리 */
+html body .prose ul,
 html body .prose ol {
-  margin-top: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;
 }
 
-html body .prose ol > li {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0.1rem !important;
-  padding-bottom: 0.1rem !important;
-  color: #000000 !important; /* 숫자 옆의 글자색도 선명하게 */
+/* 3. 리스트 내부 항목(li) 사이 간격 */
+html body .prose li {
+  margin-top: 0.3rem !important;
+  margin-bottom: 0.3rem !important;
 }
 
-/* 3. 숫자 리스트 내부 p 태그 여백 제거 */
-html body .prose ol li p {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+/* 4. 리스트 점(marker) 및 숫자 색상: 희끄무리한 것 방지 */
+html body .prose ul > li::marker,
+html body .prose ol > li::marker {
+  color: #000000 !important;
+  font-weight: bold !important;
+}
+
+/* 5. 리스트 내부 p 태그: 여백 완전히 죽이기 */
+html body .prose li p {
+  margin: 0 !important;
   display: inline !important;
 }
 
-/* 1. 점(Bullet) 색상과 불투명도 강제 고정 */
-html body .prose ul > li::marker {
-  color: #000000 !important; /* 완전 검은색 */
-}
-
-/* 3. 리스트 내부의 p 태그 여백 제거 (Tiptap은 li 안에 p를 넣기도 합니다) */
-html body .prose li p {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  display: inline !important; /* 문단 여백을 없애고 한 줄로 취급 */
-}
-
-/* 1. 코드 블록 전체 컨테이너 설정 */
+/* --- 코드 블록(Pre/Code) 설정 --- */
 .prose pre {
-  background-color: #1e2227 !important; /* One Dark 테마 배경색 */
+  background-color: #1e2227 !important;
   padding: 1.5rem !important;
   border-radius: 0.75rem !important;
   line-height: 1.7 !important;
   border: 1px solid #3e4451;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
-/* 2. 내부 코드 텍스트 기본 설정 */
 .prose pre code {
   font-size: 0.9rem !important;
-  color: #abb2bf !important; /* 기본 회색 텍스트 */
+  color: #abb2bf !important;
   background: transparent !important;
   padding: 0 !important;
 }
 
-/* 3. 예시 이미지처럼 알록달록하게 만들기 (핵심!) */
+/* 하이라이팅 색상 */
 .prose pre code .hljs-keyword,
 .prose pre code .hljs-selector-tag {
   color: #c678dd !important;
   font-weight: 600 !important;
-} /* 보라 */
-
+}
 .prose pre code .hljs-function,
 .prose pre code .hljs-title.function_ {
   color: #61afef !important;
-} /* 파랑 */
-
+}
 .prose pre code .hljs-string {
   color: #98c379 !important;
-} /* 초록 */
-
+}
 .prose pre code .hljs-number,
 .prose pre code .hljs-literal {
   color: #d19a66 !important;
-} /* 주황 */
-
+}
 .prose pre code .hljs-name,
 .prose pre code .hljs-tag .hljs-name {
   color: #e06c75 !important;
-} /* 빨강 (태그 이름) */
-
+}
 .prose pre code .hljs-attr,
 .prose pre code .hljs-attribute {
   color: #d19a66 !important;
-} /* 황갈색 (속성) */
-
+}
 .prose pre code .hljs-comment {
   color: #5c6370 !important;
   font-style: italic !important;
-} /* 주석 */
-
+}
 .prose pre code .hljs-params {
   color: #abb2bf !important;
-} /* 매개변수 */
+}
