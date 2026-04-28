@@ -12,11 +12,8 @@ export default function Sidebar() {
     <div className="flex flex-col h-full">
       {/* 로고 영역 */}
       <div className="p-6">
-        <Link
-          href="/"
-          className="text-xl font-bold text-blue-600 tracking-tight"
-        >
-          DevFlow
+        <Link href="/" className="text-xl font-bold tracking-tight">
+          D<span className="text-blue-600">F</span>
         </Link>
       </div>
 
