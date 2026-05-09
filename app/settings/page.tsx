@@ -20,20 +20,15 @@ import Image from "next/image";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const { webhookUrl, theme, setGithubConfig } = useConfigStore();
 
-  // Zustand 스토어 상태 추출
-  const { extension, webhookUrl, theme, setGithubConfig } = useConfigStore();
-
-  // 설정 임시 상태
   const [pendingWebhook, setPendingWebhook] = useState(webhookUrl || "");
   const [pendingTheme, setPendingTheme] = useState(theme || "light");
   const [pendingTemplate, setPendingTemplate] = useState("standard");
   const [isSaving, setIsSaving] = useState(false);
 
-  // 설정 저장 함수
   const handleSaveSettings = () => {
     setIsSaving(true);
-
     setGithubConfig({
       webhookUrl: pendingWebhook,
       theme: pendingTheme,
@@ -75,7 +70,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-10">
-        {/* 1. 계정 정보 섹션 (로그인 유무에 따라 UI 전격 교체) */}
         <section className="space-y-4">
           <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
             <User size={14} /> ACCOUNT
@@ -85,13 +79,19 @@ export default function SettingsPage() {
             <div className="bg-white border border-slate-200 rounded-3xl p-6 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <Image
-                    src={session.user?.image || ""}
-                    alt="profile"
-                    width={56}
-                    height={56}
-                    className="rounded-2xl border-2 border-white shadow-md"
-                  />
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt="profile"
+                      width={56}
+                      height={56}
+                      className="rounded-2xl border-2 border-white shadow-md object-cover"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 border-2 border-white shadow-md">
+                      <User size={28} />
+                    </div>
+                  )}
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div>
@@ -131,8 +131,8 @@ export default function SettingsPage() {
           )}
         </section>
 
+        {/* 하단 설정 섹션들 (템플릿, 테마, 웹훅) */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* 2. 문서 템플릿 설정 (언제나 활성) */}
           <section className="space-y-4">
             <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
               <LayoutTemplate size={14} /> DOCUMENT TEMPLATE
@@ -162,7 +162,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* 3. 알림 및 환경 설정 (언제나 활성) */}
           <div className="space-y-6">
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
@@ -190,6 +189,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </section>
+
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
                 <Bell size={14} /> NOTIFICATIONS
