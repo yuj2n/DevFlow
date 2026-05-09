@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 경로 순회 공격 방지
+    if (path.includes("..") || path.startsWith("/")) {
+      return NextResponse.json(
+        { error: "유효하지 않은 파일 경로입니다." },
+        { status: 400 },
+      );
+    }
+
     const octokit = new Octokit({ auth: accessToken });
 
     // 기존 파일 SHA 확인
