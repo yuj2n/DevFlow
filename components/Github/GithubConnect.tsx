@@ -131,9 +131,9 @@ export default function GithubConnect() {
       {/* 계정 연결 섹션 */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-5">
-          {isConnected ? (
+          {isConnected && session.user.image ? (
             <Image
-              src={session.user?.image || ""}
+              src={session.user.image}
               alt="profile"
               width={56}
               height={56}
@@ -150,7 +150,7 @@ export default function GithubConnect() {
             </h3>
             <p className="text-slate-500 text-sm">
               {isConnected
-                ? `${session.user?.name} (@${session.user.username}) 계정과 연결됨`
+                ? `${session.user.name} (@${session.user.username}) 계정과 연결됨`
                 : "문서를 푸시할 GitHub 계정을 연결하세요."}
             </p>
           </div>
