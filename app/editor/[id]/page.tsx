@@ -1,15 +1,84 @@
 "use client";
 
+import { useState } from "react";
 import { useDocStore } from "@/store/useDocStore";
-import { useParams } from "next/navigation";
+import { useConfigStore } from "@/store/useConfigStore";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
+import { requestGithubPush } from "@/lib/github";
 
 export default function EditorPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { data: session } = useSession();
   const { documents, updateDocument } = useDocStore();
 
+  // 전역 설정값 가져오기
+  const { selectedRepo, targetDir, extension } = useConfigStore();
+
+  const [isPushing, setIsPushing] = useState(false);
+
   const doc = documents.find((d) => d.id === id);
+
+  const handleGithubPush = async () => {
+    if (!doc) return;
+
+    // 1. 세션에서 정확한 username(yuj2n 등)을 추출
+    const owner = session?.user?.username;
+
+    // 2. 인증 정보가 없다면 푸시 프로세스 자체를 차단 (방어적 프로그래밍)
+    if (!owner) {
+      alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
+      router.push("/settings/github"); // 연동 페이지로 유도하여 근본적 해결
+      return;
+    }
+
+    // 가드 로직: 설정이 없으면 설정 페이지로 유도
+    if (!selectedRepo) {
+      if (
+        confirm(
+          "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
+        )
+      ) {
+        router.push("/settings/github"); // 실제 설정 페이지 경로로 수정하세요
+      }
+      return;
+    }
+
+    setIsPushing(true);
+
+    try {
+      // 저장된 설정값을 사용하여 푸시 실행
+      await requestGithubPush({
+        owner, // 세션 닉네임 사용
+        repo: selectedRepo, // 실제 레포 이름
+        path: (() => {
+          const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
+          const safeTitle = (doc.title?.trim() || "untitled")
+            .replace(/[\\/]+/g, "_")
+            .replace(/\s+/g, "_");
+          const ext = extension || ".md";
+          return normalizedDir
+            ? `${normalizedDir}/${safeTitle}${ext}`
+            : `${safeTitle}${ext}`;
+        })(),
+        content: doc.content,
+        message: `DevFlow: ${doc.title} 문서 업데이트`,
+      });
+
+      alert("🎉 GitHub 푸시가 성공적으로 완료되었습니다!");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "알 수 없는 오류가 발생했습니다.";
+      alert(`❌ 푸시 실패: ${errorMessage}`);
+    } finally {
+      setIsPushing(false);
+    }
+  };
 
   if (!doc) {
     return (
@@ -31,10 +100,16 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 1. 상단 네비게이션 바: overflow-hidden으로 스크롤바 원천 차단 */}
+      {/* 네비게이션 바 및 에디터 UI 생략 */}
       <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
-        {/* 왼쪽 구역: 목록 가기 및 로고 (크기 고정) */}
+        {/* 왼쪽 구역 */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          <Link
+            href="/documents"
+            className="text-slate-400 hover:text-slate-600 font-medium transition-colors whitespace-nowrap text-xs md:text-sm"
+          >
+            ← <span className="hidden sm:inline">목록</span>
+          </Link>
           <span className="text-slate-200 flex-shrink-0">|</span>
           <span className="font-black text-base md:text-xl tracking-tighter whitespace-nowrap flex-shrink-0">
             Dev<span className="text-blue-600">Flow</span>
@@ -44,7 +119,7 @@ export default function EditorPage() {
           </span>
         </div>
 
-        {/* 중간 구역: 제목 입력창 (flex-1과 min-w-0으로 화면 작아지면 가장 먼저 줄어듦) */}
+        {/* 중간 구역: 제목 입력창 */}
         <div className="flex-1 min-w-0 mx-2 md:mx-4">
           <input
             type="text"
@@ -59,24 +134,16 @@ export default function EditorPage() {
           />
         </div>
 
-        {/* 오른쪽 구역: 저장 및 푸시 버튼 (글자 크기도 반응형으로 작아짐) */}
+        {/* 오른쪽 구역: GitHub 푸시 버튼 */}
         <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
           <button
-            onClick={() => alert(`${doc.title} 저장 완료`)}
-            className="px-2 md:px-4 py-2 text-slate-500 text-xs md:text-sm font-medium hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap"
+            onClick={handleGithubPush}
+            disabled={isPushing}
+            className={`px-3 md:px-5 py-1.5 md:py-2 text-white text-xs md:text-sm font-bold rounded-lg shadow-lg transition-all active:scale-95 whitespace-nowrap
+              ${isPushing ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"}
+            `}
           >
-            저장
-          </button>
-
-          <button
-            onClick={() =>
-              alert(
-                "GitHub API 연동을 통해 레포지토리에 푸시될 예정입니다 (9주차 구현 목표)",
-              )
-            }
-            className="px-3 md:px-5 py-1.5 md:py-2 bg-blue-600 text-white text-xs md:text-sm font-bold rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all active:scale-95 whitespace-nowrap"
-          >
-            <span className="hidden sm:inline">GitHub로 </span>푸시
+            {isPushing ? "푸시 중..." : "GitHub로 푸시"}
           </button>
         </div>
       </nav>

@@ -7,6 +7,7 @@ import {
   Settings,
   Share2,
   GitBranch,
+  LogOut,
 } from "lucide-react";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import Link from "next/link";
@@ -106,7 +107,7 @@ export default function SideTabBar() {
                     ${isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
                   `}
                 >
-                  {session.user?.name}
+                  {session.user?.username}
                 </span>
               </div>
 
@@ -117,17 +118,30 @@ export default function SideTabBar() {
                   ${isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
                 `}
               >
-                로그아웃
+                <LogOut size={16} />
               </button>
             </div>
           </div>
         ) : (
           <button
             onClick={() => signIn("github")}
-            className="w-full flex items-center justify-center h-10 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all"
+            className="w-full flex items-center justify-center h-10 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all overflow-hidden"
           >
-            <span className="whitespace-nowrap px-2">
-              {isExpanded ? "GitHub 로그인" : "G"}
+            {/* 아이콘(G) 고정 표시 */}
+            <span
+              className={`${isExpanded ? "hidden" : "block group-hover:hidden"}`}
+            >
+              G
+            </span>
+
+            {/* 확장되었을 때나 호버되었을 때 나타나는 풀 텍스트 */}
+            <span
+              className={`
+      whitespace-nowrap px-2 transition-opacity duration-300
+      ${isExpanded ? "block opacity-100" : "hidden opacity-0 group-hover:block group-hover:opacity-100"}
+    `}
+            >
+              GitHub 로그인
             </span>
           </button>
         )}

@@ -3,12 +3,16 @@ import "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: string; // 세션에 accessToken이 있을 수 있다고 정의
+    // accessToken?: string; <- 클라이언트 노출 방지
+    user: {
+      username?: string;
+    } & DefaultSession["user"];
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    accessToken?: string; // JWT 토큰에도 accessToken이 있을 수 있다고 정의
+    accessToken?: string;
+    username?: string;
   }
 }

@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   GitBranch,
   RefreshCw,
   CheckCircle2,
-  ExternalLink,
-  Settings2,
   FolderSync,
+  ChevronDown,
 } from "lucide-react";
+import { useConfigStore } from "@/store/useConfigStore";
+import axios from "axios";
+import Image from "next/image";
 
 const GithubLogo = ({ size = 24 }: { size?: number }) => (
   <svg
@@ -28,125 +31,279 @@ const GithubLogo = ({ size = 24 }: { size?: number }) => (
 );
 
 export default function GithubConnect() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [repo, setRepo] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { data: session } = useSession();
+  const {
+    selectedRepo,
+    targetDir,
+    autoPush,
+    branch,
+    extension,
+    setGithubConfig,
+  } = useConfigStore();
 
-  const handleConnect = () => {
-    setIsSyncing(true);
-    // OAuth 인증 로직이 들어갈 자리
+  // 목록 데이터 상태
+  const [repos, setRepos] = useState<{ id: number; name: string }[]>([]);
+  const [branches, setBranches] = useState<string[]>([]);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+
+  // 임시 대기 상태
+  const [pendingRepo, setPendingRepo] = useState(selectedRepo);
+  const [pendingDir, setPendingDir] = useState(targetDir);
+  const [pendingAutoPush, setPendingAutoPush] = useState(autoPush);
+  const [pendingBranch, setPendingBranch] = useState(branch || "main");
+  const [pendingExt, setPendingExt] = useState(extension || ".md");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 레포 목록 가져오기
+  useEffect(() => {
+    if (session) {
+      const fetchRepos = async () => {
+        setIsLoadingRepos(true);
+        try {
+          const response = await axios.get("/api/github-repos");
+          if (Array.isArray(response.data)) setRepos(response.data);
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            console.error(
+              "Repos load failed:",
+              error.response?.data || error.message,
+            );
+          } else {
+            console.error("예상치 못한 문제가 발생했습니다:", error);
+          }
+        } finally {
+          setIsLoadingRepos(false);
+        }
+      };
+      fetchRepos();
+    }
+  }, [session]);
+
+  // 선택된 레포에 따른 브랜치 목록 가져오기
+  useEffect(() => {
+    if (session?.user?.username && pendingRepo) {
+      const fetchBranches = async () => {
+        setIsLoadingBranches(true);
+        try {
+          const response = await axios.get("/api/github-branches", {
+            params: {
+              owner: session.user.username,
+              repo: pendingRepo,
+            },
+          });
+          setBranches(response.data);
+          // 현재 선택된 브랜치가 목록에 없으면 기본값 설정
+          if (!response.data.includes(pendingBranch)) {
+            setPendingBranch(response.data[0] || "main");
+          }
+        } catch (error) {
+          console.error("Branches load failed:", error);
+        } finally {
+          setIsLoadingBranches(false);
+        }
+      };
+      fetchBranches();
+    }
+  }, [pendingRepo, session]);
+
+  const handleSaveConfig = () => {
+    setIsSaving(true);
+    setGithubConfig({
+      selectedRepo: pendingRepo,
+      targetDir: pendingDir,
+      autoPush: pendingAutoPush,
+      branch: pendingBranch,
+      extension: pendingExt,
+    });
+
     setTimeout(() => {
-      setIsConnected(true);
-      setIsSyncing(false);
-    }, 1500);
+      setIsSaving(false);
+      alert("모든 설정이 안전하게 저장되었습니다.");
+    }, 600);
   };
+
+  const isConnected = !!session;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
-      {/* 1. 계정 연결 섹션 */}
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+      {/* 계정 연결 섹션 */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center">
-            <GithubLogo size={32} />
-          </div>
+          {isConnected && session?.user?.image ? (
+            <Image
+              src={session.user.image}
+              alt="profile"
+              width={56}
+              height={56}
+              className="rounded-2xl border border-slate-100"
+            />
+          ) : (
+            <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center">
+              <GithubLogo size={32} />
+            </div>
+          )}
           <div>
             <h3 className="font-bold text-xl text-slate-900">
               GitHub 계정 연결
             </h3>
             <p className="text-slate-500 text-sm">
               {isConnected
-                ? "yujin-dev 계정과 연결되었습니다."
+                ? `${session?.user?.name} (@${session?.user?.username}) 계정과 연결됨`
                 : "문서를 푸시할 GitHub 계정을 연결하세요."}
             </p>
           </div>
         </div>
-        <button
-          onClick={handleConnect}
-          className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
-            isConnected
-              ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20"
-          }`}
-        >
-          {isSyncing ? (
-            <RefreshCw className="animate-spin" size={20} />
-          ) : isConnected ? (
-            "계정 전환"
-          ) : (
-            "GitHub로 로그인"
-          )}
-        </button>
       </div>
 
       {isConnected && (
-        <div className="grid gap-6 md:grid-cols-2 animate-in fade-in slide-in-from-bottom-4">
-          {/* 2. 레포지토리 선택 섹션 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 text-blue-600">
-              <GitBranch size={20} />
-              <span className="font-bold">저장소 선택</span>
-            </div>
-            <select
-              value={repo}
-              onChange={(e) => setRepo(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mb-4"
-            >
-              <option value="">레포지토리를 선택하세요</option>
-              <option value="capstone-design">capstone-design</option>
-              <option value="devflow-project">devflow-project</option>
-              <option value="api-docs-repo">api-docs-repo</option>
-            </select>
-            <p className="text-xs text-slate-400 flex items-center gap-1">
-              <ExternalLink size={12} />새 레포지토리는 깃허브에서 생성 후
-              불러오세요.
-            </p>
-          </div>
-
-          {/* 3. 동기화 설정 섹션 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 text-orange-500">
-              <FolderSync size={20} />
-              <span className="font-bold">동기화 설정</span>
-            </div>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-500 ml-1">
-                  TARGET DIRECTORY
-                </label>
-                <input
-                  type="text"
-                  placeholder="/docs/api-specs"
-                  className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"
-                />
+        <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 text-blue-600 font-bold">
+                <GitBranch size={20} />
+                <span>저장소 및 브랜치</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                <span className="text-xs font-bold text-slate-500">
-                  AUTO-PUSH
-                </span>
-                <div className="w-10 h-5 bg-blue-600 rounded-full relative">
-                  <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
+                  Repository
+                </label>
+                <select
+                  value={pendingRepo}
+                  onChange={(e) => setPendingRepo(e.target.value)}
+                  disabled={isLoadingRepos}
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium disabled:opacity-50 appearance-none"
+                >
+                  {isLoadingRepos ? (
+                    <option>불러오는 중...</option>
+                  ) : (
+                    <>
+                      <option value="">레포지토리를 선택하세요</option>
+                      {repos.map((r) => (
+                        <option key={r.id} value={r.name}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
+                  Target Branch
+                </label>
+                <div className="relative">
+                  <select
+                    value={pendingBranch}
+                    onChange={(e) => setPendingBranch(e.target.value)}
+                    disabled={isLoadingBranches || !pendingRepo}
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium disabled:opacity-50 appearance-none"
+                  >
+                    {isLoadingBranches ? (
+                      <option>브랜치 확인 중...</option>
+                    ) : (
+                      branches.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <ChevronDown
+                    size={16}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {isConnected && repo && (
-        <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="text-blue-600" size={24} />
-            <div>
-              <p className="font-bold text-blue-900">연동 준비 완료!</p>
-              <p className="text-blue-700 text-sm">
-                이제 에디터 상단 &apos;GitHub로 푸시&apos; 버튼을 눌러 문서를
-                업로드할 수 있습니다.
-              </p>
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 text-orange-500 font-bold">
+                <FolderSync size={20} />
+                <span>상세 동기화 설정</span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
+                  Target Directory
+                </label>
+                <input
+                  type="text"
+                  value={pendingDir}
+                  onChange={(e) => setPendingDir(e.target.value)}
+                  placeholder="/docs/api-specs"
+                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
+                  File Extension
+                </label>
+                <div className="flex gap-2">
+                  {[".md", ".mdx"].map((ext) => (
+                    <button
+                      key={ext}
+                      onClick={() => setPendingExt(ext)}
+                      className={`flex-1 p-3 rounded-xl border text-sm font-bold transition-all ${
+                        pendingExt === ext
+                          ? "bg-orange-50 border-orange-200 text-orange-600"
+                          : "bg-slate-50 border-slate-200 text-slate-400"
+                      }`}
+                    >
+                      {ext}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl mt-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">
+                  Auto-Push On Save
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pendingAutoPush}
+                  onClick={() => setPendingAutoPush(!pendingAutoPush)}
+                  className={`w-10 h-5 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${pendingAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
+                >
+                  <div
+                    className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${pendingAutoPush ? "right-1" : "left-1"}`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors">
-            설정 저장
-          </button>
+
+          {pendingRepo && (
+            <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="text-blue-600" size={24} />
+                <div>
+                  <p className="font-bold text-blue-900 text-sm">
+                    연동 준비 완료
+                  </p>
+                  <p className="text-blue-700 text-xs">
+                    설정을 저장하면 즉시 에디터에 적용됩니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleSaveConfig}
+                disabled={isSaving || isLoadingBranches}
+                className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
+              >
+                {isSaving ? (
+                  <RefreshCw size={16} className="animate-spin" />
+                ) : (
+                  "모든 설정 저장"
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

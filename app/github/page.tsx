@@ -21,9 +21,7 @@ export default function GithubPage() {
       </div>
 
       {/* 연동 컴포넌트 */}
-      <div className="py-12">
-        <GithubConnect />
-      </div>
+      <GithubConnect />
     </div>
   );
 }
