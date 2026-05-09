@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="ko" className="h-full antialiased">
       <body className="h-full">
         <Providers>
           {/* 클라이언트 로직(사이드바 유무)을 담당하는 컴포넌트로 감싸기 */}
