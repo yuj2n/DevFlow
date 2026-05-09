@@ -93,6 +93,7 @@ export default function EditorPage() {
         </header>
 
         <TiptapEditor
+          key={id as string}
           content={doc.content}
           onChange={(html) => updateDocument(doc.id as string, doc.title, html)}
         />
