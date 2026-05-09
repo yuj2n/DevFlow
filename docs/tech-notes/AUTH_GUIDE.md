@@ -60,7 +60,3 @@ declare module "next-auth" {
 
 - **이미지 보안 정책**: GitHub 프로필 이미지를 출력하려면 `next.config.ts`의 `remotePatterns` 설정에 `avatars.githubusercontent.com` 도메인을 반드시 추가해야 합니다.
 - **서버 재시작**: `.env.local`이나 `next.config.ts`를 수정했을 경우 반드시 개발 서버를 재시작해야 변경 사항이 반영됩니다.
-
-```
-
-```
