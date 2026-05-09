@@ -1,11 +1,17 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 
+const requireEnv = (name: string) => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env: ${name}`);
+  return value;
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+      clientId: requireEnv("GITHUB_ID"),
+      clientSecret: requireEnv("GITHUB_SECRET"),
       authorization: { params: { scope: "read:user user:email repo" } },
     }),
   ],
