@@ -1,8 +1,13 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-pretendard:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, sans-serif;
 }
 
 @theme inline {
@@ -22,5 +27,97 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-pretendard);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.015em;
+  line-height: 1.6;
+}
+
+/* --- 에디터 본문(prose) 공통 설정 --- */
+.prose {
+  font-family: var(--font-pretendard);
+  color: #1a1a1a !important; /* 글씨색 더 진하게 고정 */
+  max-width: none !important;
+}
+
+/* 1. 일반 문단(p) 간격: 평소엔 아주 촘촘하게 */
+html body .prose p {
+  line-height: 1.5 !important;
+}
+
+/* 2. 리스트(ul, ol): 작성 시에만 위아래 여백을 줘서 본문과 분리 */
+html body .prose ul,
+html body .prose ol {
+  padding-left: 1.5rem !important;
+}
+
+/* 3. 리스트 내부 항목(li) 사이 간격 */
+html body .prose li {
+  margin-top: 0.3rem !important;
+  margin-bottom: 0.3rem !important;
+}
+
+/* 4. 리스트 점(marker) 및 숫자 색상: 희끄무리한 것 방지 */
+html body .prose ul > li::marker,
+html body .prose ol > li::marker {
+  color: #000000 !important;
+  font-weight: bold !important;
+}
+
+/* 5. 리스트 내부 p 태그: 여백 완전히 죽이기 */
+html body .prose li p {
+  margin: 0 !important;
+  display: inline !important;
+}
+
+/* --- 코드 블록(Pre/Code) 설정 --- */
+.prose pre {
+  background-color: #1e2227 !important;
+  padding: 1.5rem !important;
+  border-radius: 0.75rem !important;
+  line-height: 1.7 !important;
+  border: 1px solid #3e4451;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.prose pre code {
+  font-size: 0.9rem !important;
+  color: #abb2bf !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* 하이라이팅 색상 */
+.prose pre code .hljs-keyword,
+.prose pre code .hljs-selector-tag {
+  color: #c678dd !important;
+  font-weight: 600 !important;
+}
+.prose pre code .hljs-function,
+.prose pre code .hljs-title.function_ {
+  color: #61afef !important;
+}
+.prose pre code .hljs-string {
+  color: #98c379 !important;
+}
+.prose pre code .hljs-number,
+.prose pre code .hljs-literal {
+  color: #d19a66 !important;
+}
+.prose pre code .hljs-name,
+.prose pre code .hljs-tag .hljs-name {
+  color: #e06c75 !important;
+}
+.prose pre code .hljs-attr,
+.prose pre code .hljs-attribute {
+  color: #d19a66 !important;
+}
+.prose pre code .hljs-comment {
+  color: #5c6370 !important;
+  font-style: italic !important;
+}
+.prose pre code .hljs-params {
+  color: #abb2bf !important;
 }
