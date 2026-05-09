@@ -22,8 +22,8 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token: _token }) {
-      // [보안 수정]: session 객체에 accessToken을 담지 않아 브라우저에서는 토큰이 보이지 않게 수정
+    async session({ session }) {
+      // [보안 수정]: 서버 API(github-push)에서는 getToken을 통해 JWT에서 직접 토큰을 읽어옵니다.
       return session;
     },
   },
