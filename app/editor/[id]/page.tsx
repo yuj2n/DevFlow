@@ -25,6 +25,16 @@ export default function EditorPage() {
   const handleGithubPush = async () => {
     if (!doc) return;
 
+    // 1. 세션에서 정확한 username(yuj2n 등)을 추출
+    const owner = session?.user?.username;
+
+    // 2. 인증 정보가 없다면 푸시 프로세스 자체를 차단 (방어적 프로그래밍)
+    if (!owner) {
+      alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
+      router.push("/settings/github"); // 연동 페이지로 유도하여 근본적 해결
+      return;
+    }
+
     // 가드 로직: 설정이 없으면 설정 페이지로 유도
     if (!selectedRepo) {
       if (
@@ -42,7 +52,7 @@ export default function EditorPage() {
     try {
       // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
-        owner: session?.user?.username || "user-dev", // 세션 닉네임 사용
+        owner, // 세션 닉네임 사용
         repo: selectedRepo, // 실제 레포 이름
         path: (() => {
           const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
