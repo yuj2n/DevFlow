@@ -82,7 +82,7 @@ export default function GithubConnect() {
 
   // 선택된 레포에 따른 브랜치 목록 가져오기
   useEffect(() => {
-    if (session && pendingRepo) {
+    if (session?.user?.username && pendingRepo) {
       const fetchBranches = async () => {
         setIsLoadingBranches(true);
         try {
@@ -107,7 +107,6 @@ export default function GithubConnect() {
     }
   }, [pendingRepo, session]);
 
-  // 설정 저장
   const handleSaveConfig = () => {
     setIsSaving(true);
     setGithubConfig({
@@ -131,7 +130,7 @@ export default function GithubConnect() {
       {/* 계정 연결 섹션 */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-5">
-          {isConnected && session.user.image ? (
+          {isConnected && session?.user?.image ? (
             <Image
               src={session.user.image}
               alt="profile"
@@ -150,7 +149,7 @@ export default function GithubConnect() {
             </h3>
             <p className="text-slate-500 text-sm">
               {isConnected
-                ? `${session.user.name} (@${session.user.username}) 계정과 연결됨`
+                ? `${session?.user?.name} (@${session?.user?.username}) 계정과 연결됨`
                 : "문서를 푸시할 GitHub 계정을 연결하세요."}
             </p>
           </div>
@@ -160,14 +159,12 @@ export default function GithubConnect() {
       {isConnected && (
         <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="grid md:grid-cols-2 gap-6">
-            {/* 저장소 선택 섹션 */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-blue-600 font-bold">
                 <GitBranch size={20} />
                 <span>저장소 및 브랜치</span>
               </div>
 
-              {/* 레포 선택 */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
                   Repository
@@ -193,7 +190,6 @@ export default function GithubConnect() {
                 </select>
               </div>
 
-              {/* 브랜치 선택 (추가된 부분) */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
                   Target Branch
@@ -223,14 +219,12 @@ export default function GithubConnect() {
               </div>
             </div>
 
-            {/* 동기화 및 확장자 설정 섹션 */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-orange-500 font-bold">
                 <FolderSync size={20} />
                 <span>상세 동기화 설정</span>
               </div>
 
-              {/* 대상 디렉토리 */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
                   Target Directory
@@ -244,7 +238,6 @@ export default function GithubConnect() {
                 />
               </div>
 
-              {/* 확장자 선택 */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
                   File Extension
@@ -266,26 +259,25 @@ export default function GithubConnect() {
                 </div>
               </div>
 
-              {/* 오토 푸시 토글 */}
-              <div
-                className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl cursor-pointer mt-2"
-                onClick={() => setPendingAutoPush(!pendingAutoPush)}
-              >
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl mt-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">
                   Auto-Push On Save
                 </span>
-                <div
-                  className={`w-10 h-5 rounded-full relative transition-colors ${pendingAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pendingAutoPush}
+                  onClick={() => setPendingAutoPush(!pendingAutoPush)}
+                  className={`w-10 h-5 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${pendingAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
                 >
                   <div
                     className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${pendingAutoPush ? "right-1" : "left-1"}`}
                   />
-                </div>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* 하단 저장 바 */}
           {pendingRepo && (
             <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl flex items-center justify-between">
               <div className="flex items-center gap-3">
