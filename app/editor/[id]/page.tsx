@@ -1,15 +1,52 @@
 "use client";
 
+import { useState } from "react";
 import { useDocStore } from "@/store/useDocStore";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
+import { requestGithubPush } from "@/lib/github"; // 1. 분리한 로직 임포트
 
 export default function EditorPage() {
   const { id } = useParams();
   const { documents, updateDocument } = useDocStore();
 
+  // 2. 푸시 로딩 상태 관리
+  const [isPushing, setIsPushing] = useState(false);
+
   const doc = documents.find((d) => d.id === id);
+
+  // 3. GitHub 푸시 처리 핸들러
+  const handleGithubPush = async () => {
+    if (!doc) return;
+
+    // 사용자에게 대상 레포지토리 입력받기 (향후 선택 UI로 개선 가능)
+    const repo = prompt("푸시할 GitHub 레포지토리 이름을 입력하세요");
+    if (!repo) return;
+
+    setIsPushing(true);
+
+    try {
+      // lib/github.ts에 정의된 함수 호출
+      await requestGithubPush({
+        owner: "본인의_깃허브_닉네임", // 세션 정보를 가져와서 넣으면 더 좋습니다.
+        repo: repo,
+        path: `docs/${doc.title.replace(/\s+/g, "_") || "untitled"}.md`,
+        content: doc.content,
+        message: `DevFlow: ${doc.title} 문서 업데이트`,
+      });
+
+      alert("🎉 GitHub 푸시가 성공적으로 완료되었습니다!");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "알 수 없는 오류가 발생했습니다.";
+      alert(`❌ 푸시 실패: ${errorMessage}`);
+    } finally {
+      setIsPushing(false);
+    }
+  };
 
   if (!doc) {
     return (
@@ -31,9 +68,9 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 1. 상단 네비게이션 바: overflow-hidden으로 스크롤바 원천 차단 */}
+      {/* 1. 상단 네비게이션 바 */}
       <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
-        {/* 왼쪽 구역: 목록 가기 및 로고 (크기 고정) */}
+        {/* 왼쪽 구역 */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Link
             href="/documents"
@@ -50,7 +87,7 @@ export default function EditorPage() {
           </span>
         </div>
 
-        {/* 중간 구역: 제목 입력창 (flex-1과 min-w-0으로 화면 작아지면 가장 먼저 줄어듦) */}
+        {/* 중간 구역: 제목 입력창 */}
         <div className="flex-1 min-w-0 mx-2 md:mx-4">
           <input
             type="text"
@@ -65,17 +102,29 @@ export default function EditorPage() {
           />
         </div>
 
-        {/* 오른쪽 구역: 저장 및 푸시 버튼 (글자 크기도 반응형으로 작아짐) */}
+        {/* 오른쪽 구역: GitHub 푸시 버튼 */}
         <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
           <button
-            onClick={() =>
-              alert(
-                "GitHub API 연동을 통해 레포지토리에 푸시될 예정입니다 (9주차 구현 목표)",
-              )
-            }
-            className="px-3 md:px-5 py-1.5 md:py-2 bg-blue-600 text-white text-xs md:text-sm font-bold rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all active:scale-95 whitespace-nowrap"
+            onClick={handleGithubPush}
+            disabled={isPushing}
+            className={`px-3 md:px-5 py-1.5 md:py-2 text-white text-xs md:text-sm font-bold rounded-lg shadow-lg transition-all active:scale-95 whitespace-nowrap
+              ${
+                isPushing
+                  ? "bg-slate-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
+              }
+            `}
           >
-            <span className="hidden sm:inline">GitHub로 </span>푸시
+            {isPushing ? (
+              <span className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                푸시 중...
+              </span>
+            ) : (
+              <>
+                <span className="hidden sm:inline">GitHub로 </span>푸시
+              </>
+            )}
           </button>
         </div>
       </nav>
