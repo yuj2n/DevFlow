@@ -20,7 +20,7 @@ export const useDocStore = create<DocState>()(
     (set, get) => ({
       documents: [],
       addDocument: () => {
-        const newId = Date.now().toString();
+        const newId = crypto.randomUUID();
         const newDoc = {
           id: newId,
           title: "제목 없는 문서",
