@@ -106,7 +106,7 @@ export default function SideTabBar() {
                     ${isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
                   `}
                 >
-                  {session.user?.name}
+                  {session.user?.username}
                 </span>
               </div>
 

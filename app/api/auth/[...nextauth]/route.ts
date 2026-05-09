@@ -1,5 +1,5 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
-import GithubProvider from "next-auth/providers/github";
+import GithubProvider, { GithubProfile } from "next-auth/providers/github";
 
 const requireEnv = (name: string) => {
   const value = process.env[name];
@@ -16,14 +16,19 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
-      if (account) {
+    async jwt({ token, account, profile }) {
+      if (account && profile) {
+        const githubProfile = profile as GithubProfile;
         token.accessToken = account.access_token;
+        token.username = githubProfile.login;
       }
       return token;
     },
-    async session({ session }) {
+    async session({ session, token }) {
       // [보안 수정]: 서버 API(github-push)에서는 getToken을 통해 JWT에서 직접 토큰을 읽어옵니다.
+      if (session.user) {
+        session.user.username = token.username;
+      }
       return session;
     },
   },
