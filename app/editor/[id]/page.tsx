@@ -2,36 +2,49 @@
 
 import { useState } from "react";
 import { useDocStore } from "@/store/useDocStore";
-import { useParams } from "next/navigation";
+import { useConfigStore } from "@/store/useConfigStore";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
-import { requestGithubPush } from "@/lib/github"; // 1. 분리한 로직 임포트
+import { requestGithubPush } from "@/lib/github";
 
 export default function EditorPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { data: session } = useSession();
   const { documents, updateDocument } = useDocStore();
 
-  // 2. 푸시 로딩 상태 관리
+  // 전역 설정값 가져오기
+  const { selectedRepo, targetDir } = useConfigStore();
+
   const [isPushing, setIsPushing] = useState(false);
 
   const doc = documents.find((d) => d.id === id);
 
-  // 3. GitHub 푸시 처리 핸들러
   const handleGithubPush = async () => {
     if (!doc) return;
 
-    // 사용자에게 대상 레포지토리 입력받기 (향후 선택 UI로 개선 가능)
-    const repo = prompt("푸시할 GitHub 레포지토리 이름을 입력하세요");
-    if (!repo) return;
+    // 가드 로직: 설정이 없으면 설정 페이지로 유도
+    if (!selectedRepo) {
+      if (
+        confirm(
+          "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
+        )
+      ) {
+        router.push("/settings/github"); // 실제 설정 페이지 경로로 수정하세요
+      }
+      return;
+    }
 
     setIsPushing(true);
 
     try {
-      // lib/github.ts에 정의된 함수 호출
+      // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
-        owner: "본인의_깃허브_닉네임", // 세션 정보를 가져와서 넣으면 더 좋습니다.
-        repo: repo,
-        path: `docs/${doc.title.replace(/\s+/g, "_") || "untitled"}.md`,
+        owner: session?.user?.username || "user-dev", // 세션 닉네임 사용
+        repo: selectedRepo, // 실제 레포 이름
+        path: `${targetDir.replace(/^\/|\/$/g, "")}/${doc.title.replace(/\s+/g, "_") || "untitled"}.md`, // 경로 정규화 및 제목 치환
         content: doc.content,
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
@@ -68,7 +81,7 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 1. 상단 네비게이션 바 */}
+      {/* 네비게이션 바 및 에디터 UI 생략 */}
       <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
         {/* 왼쪽 구역 */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
@@ -108,23 +121,10 @@ export default function EditorPage() {
             onClick={handleGithubPush}
             disabled={isPushing}
             className={`px-3 md:px-5 py-1.5 md:py-2 text-white text-xs md:text-sm font-bold rounded-lg shadow-lg transition-all active:scale-95 whitespace-nowrap
-              ${
-                isPushing
-                  ? "bg-slate-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
-              }
+              ${isPushing ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"}
             `}
           >
-            {isPushing ? (
-              <span className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                푸시 중...
-              </span>
-            ) : (
-              <>
-                <span className="hidden sm:inline">GitHub로 </span>푸시
-              </>
-            )}
+            {isPushing ? "푸시 중..." : "GitHub로 푸시"}
           </button>
         </div>
       </nav>
