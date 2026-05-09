@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   GitBranch,
   RefreshCw,
@@ -9,7 +10,6 @@ import {
   FolderSync,
 } from "lucide-react";
 import { useConfigStore } from "@/store/useConfigStore";
-import { useSession } from "next-auth/react";
 
 const GithubLogo = ({ size = 24 }: { size?: number }) => (
   <svg
@@ -33,32 +33,55 @@ export default function GithubConnect() {
   const { selectedRepo, targetDir, autoPush, setGithubConfig } =
     useConfigStore();
 
-  // 임시 로컬 상태 (저장 버튼 누르기 전까지 유지)
-  const [localRepo, setLocalRepo] = useState(selectedRepo);
-  const [localDir, setLocalDir] = useState(targetDir);
-  const [localAutoPush, setLocalAutoPush] = useState(autoPush);
-  const [isSyncing, setIsSyncing] = useState(false);
+  // 레포 목록 상태
+  const [repos, setRepos] = useState<{ id: number; name: string }[]>([]);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
 
-  const isConnected = !!session;
+  // 임시 대기 상태 (저장 버튼 누르기 전 UI 반영용)
+  const [pendingRepo, setPendingRepo] = useState(selectedRepo);
+  const [pendingDir, setPendingDir] = useState(targetDir);
+  const [pendingAutoPush, setPendingAutoPush] = useState(autoPush);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // 컴포넌트 마운트 시 레포 목록 가져오기
+  useEffect(() => {
+    if (session) {
+      const fetchRepos = async () => {
+        setIsLoadingRepos(true);
+        try {
+          const res = await fetch("/api/github-repos");
+          const data = await res.json();
+          if (Array.isArray(data)) setRepos(data);
+        } catch (err) {
+          console.error("Repos load failed", err);
+        } finally {
+          setIsLoadingRepos(false);
+        }
+      };
+      fetchRepos();
+    }
+  }, [session]);
+
+  // 설정 확정 저장
   const handleSaveConfig = () => {
-    setIsSyncing(true);
-    // Zustand 스토어에 저장
+    setIsSaving(true);
     setGithubConfig({
-      selectedRepo: localRepo,
-      targetDir: localDir,
-      autoPush: localAutoPush,
+      selectedRepo: pendingRepo,
+      targetDir: pendingDir,
+      autoPush: pendingAutoPush,
     });
 
     setTimeout(() => {
-      setIsSyncing(false);
-      alert("설정이 저장되었습니다! 이제 에디터에서 바로 푸시가 가능합니다.");
-    }, 800);
+      setIsSaving(false);
+      alert("설정이 안전하게 저장되었습니다.");
+    }, 600);
   };
+
+  const isConnected = !!session;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
-      {/* 1. 계정 연결 섹션 (세션 데이터 기반으로 변경) */}
+      {/* 계정 연결 섹션 */}
       <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-5">
           <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center">
@@ -75,29 +98,42 @@ export default function GithubConnect() {
             </p>
           </div>
         </div>
-        {/* 로그인 버튼은 기존 NextAuth signIn 활용 권장 */}
       </div>
 
       {isConnected && (
         <div className="grid gap-6 md:grid-cols-2 animate-in fade-in slide-in-from-bottom-4">
-          {/* 2. 레포지토리 선택 */}
+          {/* 저장소 선택 섹션 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-6 text-blue-600">
               <GitBranch size={20} />
               <span className="font-bold">저장소 선택</span>
             </div>
             <select
-              value={localRepo}
-              onChange={(e) => setLocalRepo(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mb-4"
+              value={pendingRepo}
+              onChange={(e) => setPendingRepo(e.target.value)}
+              disabled={isLoadingRepos}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mb-4 disabled:opacity-50"
             >
-              <option value="">레포지토리를 선택하세요</option>
-              <option value="capstone-design">capstone-design</option>
-              {/* 실제 데이터 연동 시에는 API로 긁어온 목록을 map으로 돌립니다 */}
+              {isLoadingRepos ? (
+                <option>레포지토리 불러오는 중...</option>
+              ) : (
+                <>
+                  <option value="">레포지토리를 선택하세요</option>
+                  {repos.map((r) => (
+                    <option key={r.id} value={r.name}>
+                      {r.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
+            <p className="text-xs text-slate-400 flex items-center gap-1">
+              <ExternalLink size={12} /> 새 레포지토리는 깃허브에서 생성 후
+              불러오세요.
+            </p>
           </div>
 
-          {/* 3. 동기화 설정 */}
+          {/* 동기화 설정 섹션 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-6 text-orange-500">
               <FolderSync size={20} />
@@ -110,25 +146,25 @@ export default function GithubConnect() {
                 </label>
                 <input
                   type="text"
-                  value={localDir}
-                  onChange={(e) => setLocalDir(e.target.value)}
+                  value={pendingDir}
+                  onChange={(e) => setPendingDir(e.target.value)}
                   placeholder="/docs/api-specs"
                   className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"
                 />
               </div>
               <div
                 className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer"
-                onClick={() => setLocalAutoPush(!localAutoPush)}
+                onClick={() => setPendingAutoPush(!pendingAutoPush)}
               >
                 <span className="text-xs font-bold text-slate-500">
                   AUTO-PUSH
                 </span>
                 <div
-                  className={`w-10 h-5 rounded-full relative transition-colors ${localAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${pendingAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
                 >
                   <div
-                    className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localAutoPush ? "right-1" : "left-1"}`}
-                  ></div>
+                    className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${pendingAutoPush ? "right-1" : "left-1"}`}
+                  />
                 </div>
               </div>
             </div>
@@ -136,23 +172,23 @@ export default function GithubConnect() {
         </div>
       )}
 
-      {isConnected && localRepo && (
+      {isConnected && pendingRepo && (
         <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="text-blue-600" size={24} />
             <div>
               <p className="font-bold text-blue-900">연동 준비 완료!</p>
               <p className="text-blue-700 text-sm">
-                이제 에디터에서 설정한 경로로 즉시 푸시가 가능합니다.
+                에디터 상단 버튼을 눌러 문서를 업로드할 수 있습니다.
               </p>
             </div>
           </div>
           <button
             onClick={handleSaveConfig}
-            disabled={isSyncing}
+            disabled={isSaving}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            {isSyncing && <RefreshCw size={14} className="animate-spin" />}
+            {isSaving && <RefreshCw size={14} className="animate-spin" />}
             설정 저장
           </button>
         </div>
