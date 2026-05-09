@@ -1,3 +1,5 @@
+import axios from "axios";
+
 interface PushParams {
   owner: string;
   repo: string;
@@ -16,23 +18,24 @@ export const requestGithubPush = async ({
   content,
   message,
 }: PushParams) => {
-  const response = await fetch("/api/github-push", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  try {
+    const response = await axios.post("/api/github-push", {
       owner,
       repo,
       path,
       content,
       message,
-    }),
-  });
+    });
 
-  const result = await response.json();
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      // 서버에서 보낸 에러 메시지가 없으면 기본 메시지 사용
+      const serverMessage = error.response?.data?.error;
+      throw new Error(serverMessage || "GitHub 푸시 중 오류가 발생했습니다.");
+    }
 
-  if (!response.ok) {
-    throw new Error(result.error || "GitHub 푸시 중 오류가 발생했습니다.");
+    // 일반 에러 처리
+    throw new Error("알 수 없는 오류가 발생했습니다.");
   }
-
-  return result;
 };

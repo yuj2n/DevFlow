@@ -10,6 +10,7 @@ import {
   FolderSync,
 } from "lucide-react";
 import { useConfigStore } from "@/store/useConfigStore";
+import axios from "axios";
 
 const GithubLogo = ({ size = 24 }: { size?: number }) => (
   <svg
@@ -49,11 +50,20 @@ export default function GithubConnect() {
       const fetchRepos = async () => {
         setIsLoadingRepos(true);
         try {
-          const res = await fetch("/api/github-repos");
-          const data = await res.json();
-          if (Array.isArray(data)) setRepos(data);
-        } catch (err) {
-          console.error("Repos load failed", err);
+          const response = await axios.get("/api/github-repos");
+
+          if (Array.isArray(response.data)) {
+            setRepos(response.data);
+          }
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            console.error(
+              "Repos load failed:",
+              error.response?.data || error.message,
+            );
+          } else {
+            console.error("예상치 못한 문제가 발생했습니다:", error);
+          }
         } finally {
           setIsLoadingRepos(false);
         }
