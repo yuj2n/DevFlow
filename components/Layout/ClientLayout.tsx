@@ -23,13 +23,7 @@ export default function ClientLayout({
       {/* 2. 메인 영역: 사이드바 너비만큼 왼쪽 여백을 유동적으로 조절 */}
       <main
         className={`flex-1 min-w-0 h-full overflow-y-auto bg-white transition-all duration-300 ease-in-out
-          ${
-            !isLandingPage
-              ? isExpanded
-                ? "pl-64" // 사이드바가 열렸을 때 (w-64)
-                : "pl-5" // 사이드바가 닫혔을 때 (w-16)
-              : "pl-0" // 랜딩 페이지일 때
-          }
+         
           /* 모바일 대응: 화면이 아주 작을 때는 사이드바를 숨기거나 패딩을 없애는 설정 */
           max-md:pl-0 
         `}
