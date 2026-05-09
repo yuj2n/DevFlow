@@ -34,7 +34,7 @@ export default function HomePage() {
             </p>
           </Link>
 
-          <div
+          <button
             onClick={() =>
               alert("준비 중인 기능입니다. 10주차에 업데이트될 예정입니다!")
             }
@@ -50,7 +50,7 @@ export default function HomePage() {
               Gemini API 기반의 실시간 취약점 분석 기능이 10주차에 업데이트될
               예정입니다.
             </p>
-          </div>
+          </button>
         </div>
       </div>
     </main>
