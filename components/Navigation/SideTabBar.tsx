@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   ChevronRight,
   FileText,
@@ -15,8 +16,8 @@ import Image from "next/image";
 export default function SideTabBar() {
   // 클릭해서 고정할 수 있는 상태값
   const { isExpanded, toggleSidebar } = useSidebarStore();
-  const { data: session, status } = useSession();
-  console.log("세션 상태:", status, "데이터:", session);
+  const { data: session } = useSession();
+  const pathname = usePathname();
 
   return (
     <aside
@@ -47,16 +48,32 @@ export default function SideTabBar() {
 
         <nav className="px-3 space-y-2 overflow-y-auto overflow-x-hidden">
           <Link href="/documents">
-            <NavItem icon={<FileText size={20} />} label="문서 관리" />
+            <NavItem
+              icon={<FileText size={20} />}
+              label="문서 관리"
+              active={pathname === "/documents"} // 3. 활성화 여부 전달
+            />
           </Link>
           <Link href="/swagger">
-            <NavItem icon={<Share2 size={20} />} label="Swagger 공유" />
+            <NavItem
+              icon={<Share2 size={20} />}
+              label="Swagger 공유"
+              active={pathname === "/swagger"}
+            />
           </Link>
           <Link href="/github">
-            <NavItem icon={<GitBranch size={20} />} label="GitHub 연동" />
+            <NavItem
+              icon={<GitBranch size={20} />}
+              label="GitHub 연동"
+              active={pathname === "/github"}
+            />
           </Link>
           <Link href="/settings">
-            <NavItem icon={<Settings size={20} />} label="설정" />
+            <NavItem
+              icon={<Settings size={20} />}
+              label="설정"
+              active={pathname === "/settings"}
+            />
           </Link>
         </nav>
       </div>
@@ -113,14 +130,34 @@ export default function SideTabBar() {
 }
 
 // 메뉴 아이템 컴포넌트
-function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
+function NavItem({
+  icon,
+  label,
+  active,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+}) {
   return (
-    <div className="flex items-center p-2 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors overflow-hidden group/item">
-      <div className="flex-shrink-0 text-slate-400 group-hover/item:text-blue-400 transition-colors">
+    <div
+      className={`
+      flex items-center p-2 rounded-xl cursor-pointer transition-all duration-200 group/item
+      ${
+        active
+          ? "bg-blue-600/20 text-blue-400" // 활성화 상태: 배경 살짝 파랗고 글자색 강조
+          : "text-slate-400 hover:bg-slate-800 hover:text-slate-300" // 기본 상태: 호버시에만 변경
+      }
+    `}
+    >
+      <div
+        className={`flex-shrink-0 ${active ? "text-blue-400" : "group-hover/item:text-blue-400"}`}
+      >
         {icon}
       </div>
-      {/* 부모가 hover 되었을 때만 텍스트가 서서히 나타남 */}
-      <span className="ml-4 text-slate-300 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <span
+        className={`ml-4 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${active ? "text-white" : ""}`}
+      >
         {label}
       </span>
     </div>
