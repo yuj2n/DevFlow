@@ -3,7 +3,7 @@ import "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    accessToken?: string;
+    // accessToken?: string; <- 클라이언트 노출 방지
     user: {
       username?: string;
     } & DefaultSession["user"];
