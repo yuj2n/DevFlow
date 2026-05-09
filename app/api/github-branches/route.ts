@@ -1,7 +1,6 @@
 import { getToken } from "next-auth/jwt";
-import { Octokit } from "octokit";
+import { Octokit, RequestError } from "octokit";
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
 
 export async function GET(req: NextRequest) {
   // 인증 토큰 확인
@@ -43,11 +42,11 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error("GitHub Branches Fetch Error:", error);
 
-    // Axios 에러인지 확인
-    if (axios.isAxiosError(error)) {
+    // Octokit RequestError 확인
+    if (error instanceof RequestError) {
       return NextResponse.json(
-        { error: error.response?.data?.message || "브랜치 목록 로드 실패" },
-        { status: error.response?.status || 500 },
+        { error: error.message || "브랜치 목록 로드 실패" },
+        { status: error.status || 500 },
       );
     }
 
