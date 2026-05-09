@@ -16,7 +16,7 @@ export default function EditorPage() {
   const { documents, updateDocument } = useDocStore();
 
   // 전역 설정값 가져오기
-  const { selectedRepo, targetDir } = useConfigStore();
+  const { selectedRepo, targetDir, extension } = useConfigStore();
 
   const [isPushing, setIsPushing] = useState(false);
 
@@ -44,7 +44,16 @@ export default function EditorPage() {
       await requestGithubPush({
         owner: session?.user?.username || "user-dev", // 세션 닉네임 사용
         repo: selectedRepo, // 실제 레포 이름
-        path: `${targetDir.replace(/^\/|\/$/g, "")}/${doc.title.replace(/\s+/g, "_") || "untitled"}.md`, // 경로 정규화 및 제목 치환
+        path: (() => {
+          const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
+          const safeTitle = (doc.title?.trim() || "untitled")
+            .replace(/[\\/]+/g, "_")
+            .replace(/\s+/g, "_");
+          const ext = extension || ".md";
+          return normalizedDir
+            ? `${normalizedDir}/${safeTitle}${ext}`
+            : `${safeTitle}${ext}`;
+        })(),
         content: doc.content,
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
