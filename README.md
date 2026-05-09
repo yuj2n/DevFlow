@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 DevFlow
 
-## Getting Started
+> **AI 기반 API 보안 진단 및 개발자 통합 워크플로우 플랫폼**
 
-First, run the development server:
+## 📌 프로젝트 개요
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**DevFlow**는 개발자가 문서를 작성함과 동시에 API를 테스트하고, AI를 통해 보안 취약점을 실시간으로 진단받는 통합 DX(Developer Experience) 환경을 제공합니다. 파편화된 도구들을 하나로 통합하여 개발 효율성을 극대화합니다.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📅 프로젝트 로드맵 및 진행 상황
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### [Phase 1: 기획 및 설계 (1~5주차)] ✅
 
-## Learn More
+- **작업 내용:** 프로젝트 주제 선정 및 요구사항 구체화
+- **상세:** 기존 Swagger 및 문서 도구의 파편화 문제 분석을 통한 서비스 방향성 확정
 
-To learn more about Next.js, take a look at the following resources:
+### [Phase 2: 핵심 기능 구현 및 환경 구축 (6~10주차)] 🔄 (현재 단계)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **6주차: 기술 스택 확정 및 초기 스캐폴딩** ✅
+  - Next.js 14(App Router) 기반 프로젝트 초기 설정
+  - Tiptap 에디터 도입을 위한 라이브러리 검토
+- **7주차: 에디터 기초 UI 및 커스텀 노드 설계** ✅
+  - Tiptap 에디터 기본 렌더링 및 `/` 커맨드 메뉴 초기 프로토타입 구현
+  - AI 연동을 위한 데이터 인터페이스 정의
+- **8주차 (현재): Swagger 파서 기초 로직 및 AI 프롬프트 테스트** 🔄
+  - OpenAPI(JSON) 데이터 추출을 위한 기초 파싱 로직 작성
+  - Gemini API를 활용한 보안 진단용 프롬프트 초안 설계
+- **9~10주차 (예정):** AI 보안 진단 기능 연동 및 10주차 기술자료(Tutorial) 문서화 완료
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### [Phase 3: 고도화 및 최종 완성 (11~15주차)] 📅
 
-## Deploy on Vercel
+- **11~12주차:** React Flow 시각화 엔진 통합 및 성능 최적화
+- **13~14주차:** GitHub API 연동을 통한 무중단 동기화 로직(DB-less) 완성
+- **15주차:** 최종 결과물 시연 및 보고서 제출
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠 Tech Stack
+
+- **Framework:** Next.js 14 (App Router)
+- **Editor Engine:** Tiptap
+- **AI:** Google Gemini API
+- **State Management:** Zustand, TanStack Query
+- **Style:** Tailwind
+
+---
+
+## 🛠 커밋 컨벤션 (Commit Convention)
+
+본 프로젝트는 일관된 커밋 히스토리 관리를 위해 아래의 규칙을 준수합니다.
+
+| 타입 (Type) | 내용 (Description) |
+| :--- | :--- |
+| **feat** | 새로운 기능 추가 |
+| **fix** | 버그 수정 |
+| **docs** | 문서 수정 (README, AI_LOG 등) |
+| **style** | 코드 포맷팅, 세미콜론 누락, UI 스타일 변경 (로직 변경 없음) |
+| **refactor** | 코드 리팩토링 |
+| **test** | 테스트 코드 추가 및 리팩토링 |
+| **chore** | 빌드 업무 수정, 패키지 매니저 설정, 프로젝트 설정 변경 |
+| **design** | CSS 등 사용자 UI 디자인 변경 |
+
+### 커밋 메시지 예시
+`feat: Zustand를 활용한 전역 상태 관리 기능 구현`
+`docs: 커밋 컨벤션 규칙 추가`
+
+---
+
+## 🤖 AI 활용 전략 (AI Collaboration Strategy)
+
+본 프로젝트는 효율적인 개발과 창의적인 문제 해결을 위해 AI(Gemini)를 다음과 같은 원칙으로 활용합니다.
+
+### 🎨 스타일 및 디자인 (Active Utilization)
+- **UI/UX 고도화**: Tailwind CSS 라이브러리 활용 및 세련된 컴포넌트 디자인 생성을 위해 AI를 적극적으로 활용합니다.
+- **프로토타이핑**: 기획 단계에서의 시각적 레이아웃 구성 및 스타일링 테마 선정에 AI의 제안을 수용하여 반영합니다.
+
+### 🛠 라이브러리 및 기능 구현 (Strategic Implementation)
+- **도구 및 스택 활용**: Zustand, TanStack Query, Tiptap 등 주요 라이브러리의 최적 활용법을 AI와 함께 강구하고, 프로젝트 아키텍처에 맞는 적용 방식을 설계합니다.
+- **문제 해결 가이드**: 복잡한 비즈니스 로직이나 에러 디버깅 시 AI를 기술적 가이드로 활용하되, 최종적인 코드는 프로젝트의 목적에 맞게 직접 검토 및 커스터마이징하여 적용합니다.
+
+---
+
+## 🌿 브랜치 전략 (Git Flow)
+
+본 프로젝트는 체계적인 소스코드 관리와 안정적인 배포를 위해 아래의 브랜치 전략을 준수합니다.
+
+| 브랜치명 | 역할 (Description) |
+| :--- | :--- |
+| **`main`** | 배포 가능한 최신 상태를 유지하는 핵심 브랜치 |
+| **`feature/*`** | 새로운 기능 개발 (예: `feature/editor-ui`) |
+| **`hotfix/*`** | 배포된 버전(`main`)에서 발생한 긴급한 결함 수정 |
+| **`fix/*`** | 개발 진행 중 발견된 일반적인 버그 수정 및 보완 |
+
+### 작업 프로세스
+1. 기능 개발 시 `main`에서 `feature/기능명` 브랜치를 생성합니다.
+2. 개발이 완료되면 `main` 브랜치로 **Pull Request(PR)**를 생성하여 병합합니다.
+3. 배포 후 긴급 수정이 필요한 경우 `hotfix/` 브랜치를 사용해 즉시 조치합니다.
