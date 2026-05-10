@@ -4,6 +4,10 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 
 // 하이라이팅 엔진 설정
 const lowlight = createLowlight(common);
@@ -21,6 +25,13 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
         // 기본 코드 블록 기능은 off(충돌 방지)
         codeBlock: false,
       }),
+      Table.configure({
+        resizable: true, // 마우스로 크기 조절 가능하게 하려면 true
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+
       // 대신 하이라이팅 기능 사용
       CodeBlockLowlight.configure({
         lowlight,
