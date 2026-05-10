@@ -122,40 +122,22 @@ html body .prose li p {
   color: #abb2bf !important;
 }
 
-/* Tiptap Table Styles */
+/* Swagger 테이블 스타일 */
 .ProseMirror table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
-  margin: 0;
-  overflow: hidden;
+  margin: 1rem 0;
 }
 
 .ProseMirror td,
 .ProseMirror th {
-  min-width: 1em;
-  border: 1px solid #ced4da; /* 테두리 색상 */
+  border: 1px solid #ced4da;
   padding: 8px 12px;
-  vertical-align: top;
-  box-sizing: border-box;
-  position: relative;
+  min-width: 1em;
 }
 
 .ProseMirror th {
+  background-color: #f8fafc;
   font-weight: bold;
-  text-align: left;
-  background-color: #f8fafc; /* 헤더 배경색 */
-}
-
-/* 선택된 셀 스타일 (필요시) */
-.ProseMirror .selectedCell:after {
-  z-index: 2;
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: rgba(200, 200, 255, 0.4);
-  pointer-events: none;
 }
