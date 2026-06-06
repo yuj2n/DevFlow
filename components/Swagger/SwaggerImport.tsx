@@ -9,9 +9,18 @@ import { useDocStore } from "@/store/useDocStore";
 export default function SwaggerImport() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDragActive, setIsDragActive] = useState(false); // 드래그 활성화 상태 관리
+  const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addDocument } = useDocStore();
+
+  // 🛡️ 1. 런타임 타입 검증을 위한 사용자 정의 타입 가드 (Type Guard)
+  const isSwaggerData = (data: unknown): data is SwaggerData => {
+    if (!data || typeof data !== "object") return false;
+    const obj = data as Record<string, unknown>;
+    if (obj.info && typeof obj.info !== "object") return false;
+    if (obj.paths && typeof obj.paths !== "object") return false;
+    return true;
+  };
 
   const processSwaggerJson = (jsonData: SwaggerData) => {
     try {
@@ -30,16 +39,21 @@ export default function SwaggerImport() {
     }
   };
 
-  // 2. URL로 가져오기 핸들러
   const handleImport = async () => {
     if (!url) return;
     setIsLoading(true);
 
     try {
-      // 3. axios 응답 데이터도 any가 남지 않도록 제네릭을 지정합니다.
       const response = await axios.get<SwaggerData>(
         `/api/proxy-swagger?url=${encodeURIComponent(url)}`,
       );
+
+      // 🛡️ API 응답에 대한 런타임 데이터 구조 검증
+      if (!isSwaggerData(response.data)) {
+        alert("유효하지 않은 Swagger 형식입니다.");
+        return;
+      }
+
       processSwaggerJson(response.data);
     } catch (error) {
       console.error(error);
@@ -49,21 +63,32 @@ export default function SwaggerImport() {
     }
   };
 
-  // 3. 파일 읽기 처리 핸들러
   const handleFile = (file: File) => {
     if (!file) return;
 
-    // JSON 파일 확장자 검증 (필요 시 확장)
     if (file.type !== "application/json" && !file.name.endsWith(".json")) {
       alert("JSON 형식의 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    // 🛡️ 2. 브라우저 메모리 고갈 및 크래시 방지를 위한 파일 크기 제한 (5MB)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      alert("파일 크기는 최대 5MB를 초과할 수 없습니다.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        // 4. JSON 파싱 결과물을 SwaggerData 타입으로 안전하게 단언합니다.
-        const json = JSON.parse(e.target?.result as string) as SwaggerData;
+        const json = JSON.parse(e.target?.result as string);
+
+        // 🛡️ 업로드된 JSON 데이터 런타임 유효성 체크
+        if (!isSwaggerData(json)) {
+          alert("유효한 Swagger 형식의 JSON이 아닙니다.");
+          return;
+        }
+
         processSwaggerJson(json);
       } catch (err) {
         alert("유효한 JSON 파일이 아닙니다.");
@@ -72,7 +97,6 @@ export default function SwaggerImport() {
     reader.readAsText(file);
   };
 
-  // 4. 드래그 앤 드롭 이벤트 핸들러들
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -93,7 +117,6 @@ export default function SwaggerImport() {
     }
   };
 
-  // 5. 클릭 시 파일 탐색기 열기 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
@@ -107,7 +130,6 @@ export default function SwaggerImport() {
 
   return (
     <div className="flex gap-6 p-6 bg-slate-50 rounded-3xl">
-      {/* URL 입력 카드 */}
       <div className="flex-1 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
           <Link size={20} />
@@ -146,7 +168,6 @@ export default function SwaggerImport() {
         </button>
       </div>
 
-      {/* 숨겨진 실제 파일 Input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -155,7 +176,6 @@ export default function SwaggerImport() {
         onChange={handleChange}
       />
 
-      {/* 파일 업로드 카드 (드래그 앤 드롭 완벽 구현) */}
       <div
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
@@ -176,7 +196,7 @@ export default function SwaggerImport() {
         <div className="text-center select-none">
           <h3 className="font-bold text-slate-700">JSON / YAML 파일 업로드</h3>
           <p className="text-slate-400 text-xs mt-1">
-            파일을 드래그하거나 클릭하여 선택하세요.
+            ファイルを드래그하거나 클릭하여 선택하세요.
           </p>
         </div>
         <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
