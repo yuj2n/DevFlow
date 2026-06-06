@@ -10,14 +10,13 @@ import TiptapEditor from "@/components/Editor/TiptapEditor";
 import { requestGithubPush } from "@/lib/github";
 
 export default function EditorPage() {
-  const { id } = useParams();
+  const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
   const { documents, updateDocument } = useDocStore();
 
-  // 전역 설정값 가져오기
+  const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
   const { selectedRepo, targetDir, extension } = useConfigStore();
-
   const [isPushing, setIsPushing] = useState(false);
 
   const doc = documents.find((d) => d.id === id);
@@ -25,24 +24,21 @@ export default function EditorPage() {
   const handleGithubPush = async () => {
     if (!doc) return;
 
-    // 1. 세션에서 정확한 username(yuj2n 등)을 추출
     const owner = session?.user?.username;
 
-    // 2. 인증 정보가 없다면 푸시 프로세스 자체를 차단 (방어적 프로그래밍)
     if (!owner) {
       alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
-      router.push("/settings/github"); // 연동 페이지로 유도하여 근본적 해결
+      router.push("/settings/github");
       return;
     }
 
-    // 가드 로직: 설정이 없으면 설정 페이지로 유도
     if (!selectedRepo) {
       if (
         confirm(
           "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
         )
       ) {
-        router.push("/settings/github"); // 실제 설정 페이지 경로로 수정하세요
+        router.push("/settings/github");
       }
       return;
     }
@@ -50,10 +46,52 @@ export default function EditorPage() {
     setIsPushing(true);
 
     try {
+      let content = doc.content;
+
+      // 코드 블록들을 순서대로 추출
+      const savedCodeBlocks: string[] = [];
+
+      // <pre><code> 태그 영역을 찾아서 알맹이만 복원한 뒤 배열에 격리하고, 본문에는 임시 치환자(##CODE_BLOCK_PLACEHOLDER_0##)만 남깁니다.
+      content = content.replace(
+        /<pre><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
+        (match, p1) => {
+          const decodedCode = p1
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&amp;/g, "&");
+
+          // 깃허브 하이라이팅 문법을 입힌 마크다운 조각 생성
+          const formattedMarkdownCode = `\n\`\`\`typescript\n${decodedCode.trim()}\n\`\`\`\n`;
+
+          savedCodeBlocks.push(formattedMarkdownCode);
+          return `##CODE_BLOCK_PLACEHOLDER_${savedCodeBlocks.length - 1}##`;
+        },
+      );
+
+      // 일반 HTML 레이아웃 태그들을 마크다운으로
+      content = content
+        .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
+        .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
+        .replace(/<h3>([\s\S]*?)<\/h3>/gi, "\n### $1\n")
+        .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1")
+        .replace(/<ul>([\s\S]*?)<\/ul>/gi, "\n$1\n")
+        .replace(/<ol>([\s\S]*?)<\/ol>/gi, "\n$1\n")
+        .replace(/<p>([\s\S]*?)<\/p>/gi, "\n$1\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, "");
+
+      // 원본 코드 블록들을 원래 자리에 차례대로 다시 심어줌
+      savedCodeBlocks.forEach((codeMarkdown, index) => {
+        content = content.replace(
+          `##CODE_BLOCK_PLACEHOLDER_${index}##`,
+          codeMarkdown,
+        );
+      });
+
       // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
-        owner, // 세션 닉네임 사용
-        repo: selectedRepo, // 실제 레포 이름
+        owner,
+        repo: selectedRepo,
         path: (() => {
           const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
           const safeTitle = (doc.title?.trim() || "untitled")
@@ -64,7 +102,7 @@ export default function EditorPage() {
             ? `${normalizedDir}/${safeTitle}${ext}`
             : `${safeTitle}${ext}`;
         })(),
-        content: doc.content,
+        content: content.trim(),
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
 
@@ -100,9 +138,8 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 네비게이션 바 및 에디터 UI 생략 */}
+      {/* 네비게이션 바 */}
       <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
-        {/* 왼쪽 구역 */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Link
             href="/documents"
@@ -124,9 +161,7 @@ export default function EditorPage() {
           <input
             type="text"
             value={doc.title}
-            onChange={(e) =>
-              updateDocument(doc.id as string, e.target.value, doc.content)
-            }
+            onChange={(e) => updateDocument(id, e.target.value, doc.content)}
             className="w-full text-slate-700 font-bold focus:outline-none bg-transparent 
               border-b border-transparent hover:border-slate-200 focus:border-blue-300
               text-sm md:text-base truncate transition-all"
@@ -148,7 +183,7 @@ export default function EditorPage() {
         </div>
       </nav>
 
-      {/* 2. 에디터 메인 영역 */}
+      {/* 에디터 메인 영역 */}
       <main className="max-w-5xl mx-auto py-8 md:py-12 px-6 md:px-8">
         <header className="mb-8 md:mb-10 border-l-4 border-blue-600 pl-5 md:pl-6">
           <p className="text-blue-600 font-bold mb-1 text-xs md:text-sm tracking-widest uppercase">
@@ -160,9 +195,9 @@ export default function EditorPage() {
         </header>
 
         <TiptapEditor
-          key={id as string}
+          key={id}
           content={doc.content}
-          onChange={(html) => updateDocument(doc.id as string, doc.title, html)}
+          onChange={(html) => updateDocument(id, doc.title, html)}
         />
       </main>
     </div>
