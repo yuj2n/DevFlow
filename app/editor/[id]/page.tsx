@@ -47,44 +47,92 @@ export default function EditorPage() {
 
     try {
       let content = doc.content;
+      const savedCodeBlocks: { language: string; code: string }[] = [];
 
-      // 코드 블록들을 순서대로 추출
-      const savedCodeBlocks: string[] = [];
-
-      // <pre><code> 태그 영역을 찾아서 알맹이만 복원한 뒤 배열에 격리하고, 본문에는 임시 치환자(##CODE_BLOCK_PLACEHOLDER_0##)만 남깁니다.
+      // 1. 코드 블록 스캔 및 언어 추출 격리
       content = content.replace(
-        /<pre><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
-        (match, p1) => {
+        /<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi,
+        (match, attributes, p1) => {
+          const langMatch = attributes.match(/class=["']?language-(\w+)["']?/i);
+          const language = langMatch ? langMatch[1] : "typescript";
+
           const decodedCode = p1
             .replace(/&lt;/g, "<")
             .replace(/&gt;/g, ">")
             .replace(/&amp;/g, "&");
 
-          // 깃허브 하이라이팅 문법을 입힌 마크다운 조각 생성
-          const formattedMarkdownCode = `\n\`\`\`typescript\n${decodedCode.trim()}\n\`\`\`\n`;
-
-          savedCodeBlocks.push(formattedMarkdownCode);
-          return `##CODE_BLOCK_PLACEHOLDER_${savedCodeBlocks.length - 1}##`;
+          savedCodeBlocks.push({ language, code: decodedCode.trim() });
+          return `\n\n##CODE_BLOCK_PLACEHOLDER_${savedCodeBlocks.length - 1}##\n\n`;
         },
       );
 
-      // 일반 HTML 레이아웃 태그들을 마크다운으로
+      // 2. Swagger 테이블 변환 (데이터 손실 방지)
+      content = content.replace(
+        /<table[^>]*>([\s\S]*?)<\/table>/gi,
+        (match) => {
+          const theadMatch = match.match(/<thead>([\s\S]*?)<\/thead>/i);
+          const tbodyMatch = match.match(/<tbody>([\s\S]*?)<\/tbody>/i);
+
+          let tableMarkdown = "\n";
+
+          if (theadMatch) {
+            const headers =
+              theadMatch[1].match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
+            const headerTexts = headers.map((h) =>
+              h.replace(/<[^>]+>/g, "").trim(),
+            );
+            tableMarkdown += "| " + headerTexts.join(" | ") + " |\n";
+            tableMarkdown +=
+              "| " + headerTexts.map(() => "---").join(" | ") + " |\n";
+          }
+
+          if (tbodyMatch) {
+            const rows =
+              tbodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+            rows.forEach((row) => {
+              const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+              const cellTexts = cells.map((c) =>
+                c.replace(/<[^>]+>/g, "").trim(),
+              );
+              tableMarkdown += "| " + cellTexts.join(" | ") + " |\n";
+            });
+          }
+
+          return tableMarkdown + "\n";
+        },
+      );
+
+      // 3. 일반 HTML 태그 및 리스트 서식 변환 (ol 번호 유지 반영)
       content = content
         .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
         .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
         .replace(/<h3>([\s\S]*?)<\/h3>/gi, "\n### $1\n")
-        .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1")
-        .replace(/<ul>([\s\S]*?)<\/ul>/gi, "\n$1\n")
-        .replace(/<ol>([\s\S]*?)<\/ol>/gi, "\n$1\n")
+        .replace(/<strong>([\s\S]*?)<\/strong>/gi, "**$1**")
+        .replace(/<code>([\s\S]*?)<\/code>/gi, "`$1`")
         .replace(/<p>([\s\S]*?)<\/p>/gi, "\n$1\n")
         .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<[^>]+>/g, "");
+        .replace(/<ul>([\s\S]*?)<\/ul>/gi, (match) => {
+          return match.replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
+        })
+        .replace(/<ol>([\s\S]*?)<\/ol>/gi, (match) => {
+          let index = 1;
+          return match.replace(
+            /<li>([\s\S]*?)<\/li>/gi,
+            (liMatch, liContent) => {
+              return `\n${index++}. ${liContent}`;
+            },
+          );
+        })
+        .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
 
-      // 원본 코드 블록들을 원래 자리에 차례대로 다시 심어줌
-      savedCodeBlocks.forEach((codeMarkdown, index) => {
+      // 4. 잔여 태그 소거
+      content = content.replace(/<\/?[^>]+(>|$)/g, "");
+
+      // 5. 코드 블록 원본 복원 (동적 언어 매핑)
+      savedCodeBlocks.forEach((block, index) => {
         content = content.replace(
           `##CODE_BLOCK_PLACEHOLDER_${index}##`,
-          codeMarkdown,
+          `\n\`\`\`${block.language}\n${block.code}\n\`\`\`\n`,
         );
       });
 
@@ -150,9 +198,6 @@ export default function EditorPage() {
           <span className="text-slate-200 flex-shrink-0">|</span>
           <span className="font-black text-base md:text-xl tracking-tighter whitespace-nowrap flex-shrink-0">
             Dev<span className="text-blue-600">Flow</span>
-          </span>
-          <span className="text-slate-200 flex-shrink-0 hidden xs:inline">
-            |
           </span>
         </div>
 
