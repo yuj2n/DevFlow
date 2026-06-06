@@ -36,7 +36,7 @@ export default function SwaggerImport() {
     setIsLoading(true);
 
     try {
-      // 💡 3. axios 응답 데이터도 any가 남지 않도록 제네릭을 지정합니다.
+      // 3. axios 응답 데이터도 any가 남지 않도록 제네릭을 지정합니다.
       const response = await axios.get<SwaggerData>(
         `/api/proxy-swagger?url=${encodeURIComponent(url)}`,
       );
@@ -62,7 +62,7 @@ export default function SwaggerImport() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        // 💡 4. JSON 파싱 결과물을 SwaggerData 타입으로 안전하게 단언합니다.
+        // 4. JSON 파싱 결과물을 SwaggerData 타입으로 안전하게 단언합니다.
         const json = JSON.parse(e.target?.result as string) as SwaggerData;
         processSwaggerJson(json);
       } catch (err) {

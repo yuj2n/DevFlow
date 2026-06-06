@@ -34,7 +34,7 @@ export const parseSwaggerToHtml = (data: SwaggerData): string => {
 
   let html = `<div style="font-family: sans-serif; color: #334155; line-height: 1.2;">`;
 
-  // 💡 데이터가 누락되어도 안전하게 기본값으로 대체 처리
+  // 데이터가 누락되어도 안전하게 기본값으로 대체 처리
   const title = data.info?.title || "가져온 API 문서";
   const version = data.info?.version || "1.0.0";
   const description = data.info?.description || "API 명세서입니다.";

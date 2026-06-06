@@ -58,6 +58,6 @@ function NavItem({ href, icon, label, active }: NavItemProps) {
 
 본 프로젝트에서는 `/documents`, `/swagger`, `/github`, `/settings` 등 주요 라우트 이동 시 사이드바 메뉴가 동적으로 강조되도록 구현 완료되었습니다.
 
-### 5. 💡 Best Practice: 외부 라이브러리 인스턴스 관리
+### 5. Best Practice: 외부 라이브러리 인스턴스 관리
 
 Tiptap, Chart.js 등 내부 상태를 직접 관리하는 외부 라이브러리를 리액트에서 사용할 때는, 데이터(ID)가 바뀔 때 key 프롭을 함께 변경하여 인스턴스를 새로 고침하세요. 이것이 수동으로 데이터를 하나하나 동기화하는 것보다 훨씬 안전하고 간결한 방법입니다.
