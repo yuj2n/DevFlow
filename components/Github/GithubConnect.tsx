@@ -47,12 +47,12 @@ export default function GithubConnect() {
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
-  // 임시 대기 상태
-  const [pendingRepo, setPendingRepo] = useState(selectedRepo);
-  const [pendingDir, setPendingDir] = useState(targetDir);
-  const [pendingAutoPush, setPendingAutoPush] = useState(autoPush);
-  const [pendingBranch, setPendingBranch] = useState(branch || "main");
-  const [pendingExt, setPendingExt] = useState(extension || ".md");
+  // useEffect 내부에서 세팅하던 것을 useState의 초기값 함수로 위임하여 무한 렌더링 버그 원천 차단
+  const [pendingRepo, setPendingRepo] = useState(() => selectedRepo);
+  const [pendingDir, setPendingDir] = useState(() => targetDir);
+  const [pendingAutoPush, setPendingAutoPush] = useState(() => autoPush);
+  const [pendingBranch, setPendingBranch] = useState(() => branch || "main");
+  const [pendingExt, setPendingExt] = useState(() => extension || ".md");
   const [isSaving, setIsSaving] = useState(false);
 
   // 레포 목록 가져오기
@@ -93,7 +93,7 @@ export default function GithubConnect() {
             },
           });
           setBranches(response.data);
-          // 현재 선택된 브랜치가 목록에 없으면 기본값 설정
+
           if (!response.data.includes(pendingBranch)) {
             setPendingBranch(response.data[0] || "main");
           }
@@ -105,13 +105,18 @@ export default function GithubConnect() {
       };
       fetchBranches();
     }
-  }, [pendingRepo, session]);
+  }, [pendingRepo, session, pendingBranch]);
 
+  // 설정 저장 핸들러
   const handleSaveConfig = () => {
     setIsSaving(true);
+    let formattedDir = pendingDir.trim();
+    if (formattedDir && !formattedDir.startsWith("/")) {
+      formattedDir = "/" + formattedDir;
+    }
     setGithubConfig({
       selectedRepo: pendingRepo,
-      targetDir: pendingDir,
+      targetDir: formattedDir || "/",
       autoPush: pendingAutoPush,
       branch: pendingBranch,
       extension: pendingExt,
@@ -119,7 +124,7 @@ export default function GithubConnect() {
 
     setTimeout(() => {
       setIsSaving(false);
-      alert("모든 설정이 안전하게 저장되었습니다.");
+      alert("상세 동기화 및 깃허브 연동 설정이 안전하게 저장되었습니다.");
     }, 600);
   };
 
@@ -159,6 +164,7 @@ export default function GithubConnect() {
       {isConnected && (
         <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="grid md:grid-cols-2 gap-6">
+            {/* 왼쪽: 저장소 및 브랜치 설정 */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-blue-600 font-bold">
                 <GitBranch size={20} />
@@ -219,6 +225,7 @@ export default function GithubConnect() {
               </div>
             </div>
 
+            {/* 오른쪽: 상세 동기화 설정 */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-orange-500 font-bold">
                 <FolderSync size={20} />
@@ -233,8 +240,8 @@ export default function GithubConnect() {
                   type="text"
                   value={pendingDir}
                   onChange={(e) => setPendingDir(e.target.value)}
-                  placeholder="/docs/api-specs"
-                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="예: /docs/api-specs (빈칸은 최상위)"
+                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-orange-500 font-medium"
                 />
               </div>
 
@@ -246,11 +253,12 @@ export default function GithubConnect() {
                   {[".md", ".mdx"].map((ext) => (
                     <button
                       key={ext}
+                      type="button"
                       onClick={() => setPendingExt(ext)}
                       className={`flex-1 p-3 rounded-xl border text-sm font-bold transition-all ${
                         pendingExt === ext
-                          ? "bg-orange-50 border-orange-200 text-orange-600"
-                          : "bg-slate-50 border-slate-200 text-slate-400"
+                          ? "bg-orange-50 border-orange-200 text-orange-600 shadow-sm"
+                          : "bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100/70"
                       }`}
                     >
                       {ext}
@@ -258,26 +266,10 @@ export default function GithubConnect() {
                   ))}
                 </div>
               </div>
-
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl mt-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  Auto-Push On Save
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={pendingAutoPush}
-                  onClick={() => setPendingAutoPush(!pendingAutoPush)}
-                  className={`w-10 h-5 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${pendingAutoPush ? "bg-blue-600" : "bg-slate-300"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${pendingAutoPush ? "right-1" : "left-1"}`}
-                  />
-                </button>
-              </div>
             </div>
           </div>
 
+          {/* 저장 버튼 활성화 영역 */}
           {pendingRepo && (
             <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -287,14 +279,15 @@ export default function GithubConnect() {
                     연동 준비 완료
                   </p>
                   <p className="text-blue-700 text-xs">
-                    설정을 저장하면 즉시 에디터에 적용됩니다.
+                    설정을 저장하면 지정하신 경로와 확장자로 자동 배포
+                    파이프라인이 구성됩니다.
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleSaveConfig}
                 disabled={isSaving || isLoadingBranches}
-                className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
+                className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-50"
               >
                 {isSaving ? (
                   <RefreshCw size={16} className="animate-spin" />
