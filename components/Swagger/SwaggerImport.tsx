@@ -196,7 +196,7 @@ export default function SwaggerImport() {
         <div className="text-center select-none">
           <h3 className="font-bold text-slate-700">JSON / YAML 파일 업로드</h3>
           <p className="text-slate-400 text-xs mt-1">
-            ファイルを드래그하거나 클릭하여 선택하세요.
+            드래그하거나 클릭하여 선택하세요.
           </p>
         </div>
         <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
