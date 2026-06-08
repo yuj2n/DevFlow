@@ -10,14 +10,13 @@ import TiptapEditor from "@/components/Editor/TiptapEditor";
 import { requestGithubPush } from "@/lib/github";
 
 export default function EditorPage() {
-  const { id } = useParams();
+  const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
   const { documents, updateDocument } = useDocStore();
 
-  // 전역 설정값 가져오기
+  const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
   const { selectedRepo, targetDir, extension } = useConfigStore();
-
   const [isPushing, setIsPushing] = useState(false);
 
   const doc = documents.find((d) => d.id === id);
@@ -25,24 +24,21 @@ export default function EditorPage() {
   const handleGithubPush = async () => {
     if (!doc) return;
 
-    // 1. 세션에서 정확한 username(yuj2n 등)을 추출
     const owner = session?.user?.username;
 
-    // 2. 인증 정보가 없다면 푸시 프로세스 자체를 차단 (방어적 프로그래밍)
     if (!owner) {
       alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
-      router.push("/settings/github"); // 연동 페이지로 유도하여 근본적 해결
+      router.push("/settings/github");
       return;
     }
 
-    // 가드 로직: 설정이 없으면 설정 페이지로 유도
     if (!selectedRepo) {
       if (
         confirm(
           "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
         )
       ) {
-        router.push("/settings/github"); // 실제 설정 페이지 경로로 수정하세요
+        router.push("/settings/github");
       }
       return;
     }
@@ -50,10 +46,100 @@ export default function EditorPage() {
     setIsPushing(true);
 
     try {
+      let content = doc.content;
+      const savedCodeBlocks: { language: string; code: string }[] = [];
+
+      // 1. 코드 블록 스캔 및 언어 추출 격리
+      content = content.replace(
+        /<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi,
+        (match, attributes, p1) => {
+          const langMatch = attributes.match(/class=["']?language-(\w+)["']?/i);
+          const language = langMatch ? langMatch[1] : "typescript";
+
+          const decodedCode = p1
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&amp;/g, "&");
+
+          savedCodeBlocks.push({ language, code: decodedCode.trim() });
+          return `\n\n##CODE_BLOCK_PLACEHOLDER_${savedCodeBlocks.length - 1}##\n\n`;
+        },
+      );
+
+      // 2. Swagger 테이블 변환 (데이터 손실 방지)
+      content = content.replace(
+        /<table[^>]*>([\s\S]*?)<\/table>/gi,
+        (match) => {
+          const theadMatch = match.match(/<thead>([\s\S]*?)<\/thead>/i);
+          const tbodyMatch = match.match(/<tbody>([\s\S]*?)<\/tbody>/i);
+
+          let tableMarkdown = "\n";
+
+          if (theadMatch) {
+            const headers =
+              theadMatch[1].match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
+            const headerTexts = headers.map((h) =>
+              h.replace(/<[^>]+>/g, "").trim(),
+            );
+            tableMarkdown += "| " + headerTexts.join(" | ") + " |\n";
+            tableMarkdown +=
+              "| " + headerTexts.map(() => "---").join(" | ") + " |\n";
+          }
+
+          if (tbodyMatch) {
+            const rows =
+              tbodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+            rows.forEach((row) => {
+              const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+              const cellTexts = cells.map((c) =>
+                c.replace(/<[^>]+>/g, "").trim(),
+              );
+              tableMarkdown += "| " + cellTexts.join(" | ") + " |\n";
+            });
+          }
+
+          return tableMarkdown + "\n";
+        },
+      );
+
+      // 3. 일반 HTML 태그 및 리스트 서식 변환 (ol 번호 유지 반영)
+      content = content
+        .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
+        .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
+        .replace(/<h3>([\s\S]*?)<\/h3>/gi, "\n### $1\n")
+        .replace(/<strong>([\s\S]*?)<\/strong>/gi, "**$1**")
+        .replace(/<code>([\s\S]*?)<\/code>/gi, "`$1`")
+        .replace(/<p>([\s\S]*?)<\/p>/gi, "\n$1\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<ul>([\s\S]*?)<\/ul>/gi, (match) => {
+          return match.replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
+        })
+        .replace(/<ol>([\s\S]*?)<\/ol>/gi, (match) => {
+          let index = 1;
+          return match.replace(
+            /<li>([\s\S]*?)<\/li>/gi,
+            (liMatch, liContent) => {
+              return `\n${index++}. ${liContent}`;
+            },
+          );
+        })
+        .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
+
+      // 4. 잔여 태그 소거
+      content = content.replace(/<\/?[^>]+(>|$)/g, "");
+
+      // 5. 코드 블록 원본 복원 (동적 언어 매핑)
+      savedCodeBlocks.forEach((block, index) => {
+        content = content.replace(
+          `##CODE_BLOCK_PLACEHOLDER_${index}##`,
+          `\n\`\`\`${block.language}\n${block.code}\n\`\`\`\n`,
+        );
+      });
+
       // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
-        owner, // 세션 닉네임 사용
-        repo: selectedRepo, // 실제 레포 이름
+        owner,
+        repo: selectedRepo,
         path: (() => {
           const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
           const safeTitle = (doc.title?.trim() || "untitled")
@@ -64,7 +150,7 @@ export default function EditorPage() {
             ? `${normalizedDir}/${safeTitle}${ext}`
             : `${safeTitle}${ext}`;
         })(),
-        content: doc.content,
+        content: content.trim(),
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
 
@@ -100,9 +186,8 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 네비게이션 바 및 에디터 UI 생략 */}
+      {/* 네비게이션 바 */}
       <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
-        {/* 왼쪽 구역 */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Link
             href="/documents"
@@ -114,9 +199,6 @@ export default function EditorPage() {
           <span className="font-black text-base md:text-xl tracking-tighter whitespace-nowrap flex-shrink-0">
             Dev<span className="text-blue-600">Flow</span>
           </span>
-          <span className="text-slate-200 flex-shrink-0 hidden xs:inline">
-            |
-          </span>
         </div>
 
         {/* 중간 구역: 제목 입력창 */}
@@ -124,9 +206,7 @@ export default function EditorPage() {
           <input
             type="text"
             value={doc.title}
-            onChange={(e) =>
-              updateDocument(doc.id as string, e.target.value, doc.content)
-            }
+            onChange={(e) => updateDocument(id, e.target.value, doc.content)}
             className="w-full text-slate-700 font-bold focus:outline-none bg-transparent 
               border-b border-transparent hover:border-slate-200 focus:border-blue-300
               text-sm md:text-base truncate transition-all"
@@ -148,7 +228,7 @@ export default function EditorPage() {
         </div>
       </nav>
 
-      {/* 2. 에디터 메인 영역 */}
+      {/* 에디터 메인 영역 */}
       <main className="max-w-5xl mx-auto py-8 md:py-12 px-6 md:px-8">
         <header className="mb-8 md:mb-10 border-l-4 border-blue-600 pl-5 md:pl-6">
           <p className="text-blue-600 font-bold mb-1 text-xs md:text-sm tracking-widest uppercase">
@@ -160,9 +240,9 @@ export default function EditorPage() {
         </header>
 
         <TiptapEditor
-          key={id as string}
+          key={id}
           content={doc.content}
-          onChange={(html) => updateDocument(doc.id as string, doc.title, html)}
+          onChange={(html) => updateDocument(id, doc.title, html)}
         />
       </main>
     </div>

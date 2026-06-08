@@ -121,3 +121,23 @@ html body .prose li p {
 .prose pre code .hljs-params {
   color: #abb2bf !important;
 }
+
+/* Swagger 테이블 스타일 */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 1px solid #ced4da;
+  padding: 8px 12px;
+  min-width: 1em;
+}
+
+.ProseMirror th {
+  background-color: #f8fafc;
+  font-weight: bold;
+}

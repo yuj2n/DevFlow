@@ -6,31 +6,42 @@ interface Document {
   title: string;
   content: string;
   updatedAt: string;
+  category: string;
 }
 
 interface DocState {
   documents: Document[];
-  addDocument: () => string; // 새 문서 만들고 ID 반환
-  updateDocument: (id: string, title: string, content: string) => void;
+  addDocument: (
+    data?: Partial<Pick<Document, "title" | "content" | "category">>,
+  ) => string;
+  // 선택적 카테고리 파라미터 추가
+  updateDocument: (
+    id: string,
+    title: string,
+    content: string,
+    category?: string,
+  ) => void;
   deleteDocument: (id: string) => void;
 }
 
 export const useDocStore = create<DocState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       documents: [],
-      addDocument: () => {
+      addDocument: (data) => {
         const newId = crypto.randomUUID();
-        const newDoc = {
+        const newDoc: Document = {
           id: newId,
-          title: "제목 없는 문서",
-          content: "<h3>새로운 문서를 작성해 보세요.</h3>",
+          title: data?.title || "제목 없는 문서",
+          content: data?.content || "<h3>새로운 문서를 작성해 보세요.</h3>",
+          category: data?.category || "Personal",
           updatedAt: new Date().toLocaleDateString(),
         };
         set((state) => ({ documents: [newDoc, ...state.documents] }));
         return newId;
       },
-      updateDocument: (id, title, content) => {
+      // 🛡️ category 파라미터 반영 및 조건부 병합 알고리즘 주입
+      updateDocument: (id, title, content, category) => {
         set((state) => ({
           documents: state.documents.map((doc) =>
             doc.id === id
@@ -38,6 +49,8 @@ export const useDocStore = create<DocState>()(
                   ...doc,
                   title,
                   content,
+                  // category 인자가 넘어왔을 때만 안전하게 덮어쓰기 처리
+                  ...(category !== undefined && { category }),
                   updatedAt: new Date().toLocaleDateString(),
                 }
               : doc,
