@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
   const blockedPatterns = [
     /^localhost$/i,
     /^127\./,
+    /^0\.0\.0\.0$/,
+    /^0$/,
     /^10\./,
     /^172\.(1[6-9]|2\d|3[01])\./,
     /^192\.168\./,
