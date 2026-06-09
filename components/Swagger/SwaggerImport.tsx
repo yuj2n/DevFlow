@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Link, FileJson, ArrowRight, RefreshCw } from "lucide-react";
+import {
+  Link as LinkIcon,
+  FileJson,
+  ArrowRight,
+  RefreshCw,
+} from "lucide-react";
 import axios from "axios";
 import { parseSwaggerToHtml, type SwaggerData } from "@/lib/swagger-parser";
 import { useDocStore } from "@/store/useDocStore";
@@ -13,7 +18,7 @@ export default function SwaggerImport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addDocument } = useDocStore();
 
-  // 🛡️ 1. 런타임 타입 검증을 위한 사용자 정의 타입 가드 (Type Guard)
+  // Swagger 규격 런타임 검증을 위한 타입 가드
   const isSwaggerData = (data: unknown): data is SwaggerData => {
     if (!data || typeof data !== "object") return false;
     const obj = data as Record<string, unknown>;
@@ -26,6 +31,7 @@ export default function SwaggerImport() {
     try {
       const convertedHtml = parseSwaggerToHtml(jsonData);
 
+      // 외부 명세를 가져오는 공정은 무조건 팀 공유용 'Shared' 카테고리로 강제 주입
       addDocument({
         title: jsonData.info?.title || "가져온 API 문서",
         content: convertedHtml,
@@ -48,7 +54,6 @@ export default function SwaggerImport() {
         `/api/proxy-swagger?url=${encodeURIComponent(url)}`,
       );
 
-      // 🛡️ API 응답에 대한 런타임 데이터 구조 검증
       if (!isSwaggerData(response.data)) {
         alert("유효하지 않은 Swagger 형식입니다.");
         return;
@@ -71,7 +76,7 @@ export default function SwaggerImport() {
       return;
     }
 
-    // 🛡️ 2. 브라우저 메모리 고갈 및 크래시 방지를 위한 파일 크기 제한 (5MB)
+    // 메모리 오버헤드 크래시 방지 (5MB 제한)
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
       alert("파일 크기는 최대 5MB를 초과할 수 없습니다.");
@@ -83,7 +88,6 @@ export default function SwaggerImport() {
       try {
         const json = JSON.parse(e.target?.result as string);
 
-        // 🛡️ 업로드된 JSON 데이터 런타임 유효성 체크
         if (!isSwaggerData(json)) {
           alert("유효한 Swagger 형식의 JSON이 아닙니다.");
           return;
@@ -132,7 +136,7 @@ export default function SwaggerImport() {
     <div className="flex gap-6 p-6 bg-slate-50 rounded-3xl">
       <div className="flex-1 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-          <Link size={20} />
+          <LinkIcon size={20} />
         </div>
         <div>
           <h3 className="font-bold text-lg">Swagger URL로 연결</h3>
@@ -148,7 +152,7 @@ export default function SwaggerImport() {
             placeholder="https://api.example.com/v1/swagger.json"
             className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 pl-10"
           />
-          <Link
+          <LinkIcon
             size={16}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
           />
@@ -196,7 +200,7 @@ export default function SwaggerImport() {
         <div className="text-center select-none">
           <h3 className="font-bold text-slate-700">JSON / YAML 파일 업로드</h3>
           <p className="text-slate-400 text-xs mt-1">
-            드래그하거나 클릭하여 선택하세요.
+            파일을 드래그하거나 클릭하여 선택하세요.
           </p>
         </div>
         <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
