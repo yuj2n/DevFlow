@@ -108,8 +108,8 @@ export default function SwaggerImport() {
     <div className="max-w-5xl mx-auto px-16 py-12 w-full">
       <div className="flex flex-col md:flex-row gap-6 items-stretch w-full">
         {/* URL 입력 카드 */}
-        <div className="flex-1 bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[320px] space-y-6">
-          <div className="space-y-4">
+        <div className="flex-1 bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[320px] ">
+          <div className="space-y-6">
             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
               <LinkIcon size={18} />
             </div>
