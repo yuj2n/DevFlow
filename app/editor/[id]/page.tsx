@@ -66,7 +66,7 @@ export default function EditorPage() {
         },
       );
 
-      // 2. Swagger 테이블 변환 (데이터 손실 방지)
+      // 2. Swagger 테이블 변환
       content = content.replace(
         /<table[^>]*>([\s\S]*?)<\/table>/gi,
         (match) => {
@@ -102,7 +102,7 @@ export default function EditorPage() {
         },
       );
 
-      // 3. 일반 HTML 태그 및 리스트 서식 변환 (ol 번호 유지 반영)
+      // 3. 일반 HTML 태그 및 리스트 서식 변환
       content = content
         .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
         .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
@@ -128,7 +128,7 @@ export default function EditorPage() {
       // 4. 잔여 태그 소거
       content = content.replace(/<\/?[^>]+(>|$)/g, "");
 
-      // 5. 코드 블록 원본 복원 (동적 언어 매핑)
+      // 5. 코드 블록 원본 복원
       savedCodeBlocks.forEach((block, index) => {
         content = content.replace(
           `##CODE_BLOCK_PLACEHOLDER_${index}##`,
@@ -136,7 +136,6 @@ export default function EditorPage() {
         );
       });
 
-      // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
         owner,
         repo: selectedRepo,
@@ -153,6 +152,8 @@ export default function EditorPage() {
         content: content.trim(),
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
+
+      updateDocument(doc.id, doc.title, doc.content, "Shared");
 
       alert("🎉 GitHub 푸시가 성공적으로 완료되었습니다!");
     } catch (error: unknown) {
@@ -207,9 +208,9 @@ export default function EditorPage() {
             type="text"
             value={doc.title}
             onChange={(e) => updateDocument(id, e.target.value, doc.content)}
-            className="w-full text-slate-700 font-bold focus:outline-none bg-transparent 
-              border-b border-transparent hover:border-slate-200 focus:border-blue-300
-              text-sm md:text-base truncate transition-all"
+            className="w-full text-slate-600 font-semibold focus:outline-none bg-transparent 
+              border-b border-transparent hover:border-slate-100 focus:border-blue-300
+              text-xs md:text-sm truncate transition-all py-1"
             placeholder="제목 없는 문서"
           />
         </div>
