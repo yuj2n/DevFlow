@@ -2,8 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useDocStore } from "@/store/useDocStore";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Trash2, FileText, Users, Calendar, RefreshCw } from "lucide-react";
+import {
+  Trash2,
+  FileText,
+  Users,
+  Calendar,
+  RefreshCw,
+  Plus,
+} from "lucide-react";
 import axios from "axios";
 
 interface GitHubFile {
@@ -26,7 +34,8 @@ interface LocalOrRemoteDoc {
 }
 
 export default function DocumentListPage() {
-  const { documents, deleteDocument } = useDocStore();
+  const { documents, addDocument, deleteDocument } = useDocStore(); // addDocument 추가
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"All" | "Personal" | "Shared">(
     "All",
   );
@@ -36,6 +45,7 @@ export default function DocumentListPage() {
   const fetchGitHubDocuments = async () => {
     setIsRepoLoading(true);
     try {
+      // 실제 사용하시는 깃허브 목록 조회 API 엔드포인트
       const response = await axios.get<GitHubFile[]>("/api/github-repos");
 
       const formattedGitDocs = response.data
@@ -65,19 +75,28 @@ export default function DocumentListPage() {
     }
   };
 
-  // setTimeout(0)을 주어 동기적 setState 호출로 인한 렌더링 꼬임 차단
   useEffect(() => {
     if (activeTab === "Shared" || activeTab === "All") {
       const timer = setTimeout(() => {
         fetchGitHubDocuments();
       }, 0);
-      return () => clearTimeout(timer); // 메모리 누수 방지
+      return () => clearTimeout(timer);
     }
   }, [activeTab]);
 
+  // 새 문서 만들기 핸들러 (Personal 카테고리로 생성 후 에디터로 이동)
+  const handleCreateNewDoc = () => {
+    const newId = addDocument({
+      title: "제목 없는 문서",
+      content: "<h3>새로운 문서를 작성해 보세요.</h3>",
+      category: "Personal",
+    });
+    router.push(`/editor/${newId}`);
+  };
+
   const getFilteredDocuments = (): LocalOrRemoteDoc[] => {
     const localPersonal = documents.filter(
-      (doc) => doc.category === "Personal",
+      (doc) => (doc.category || "Personal") === "Personal",
     );
     const localShared = documents.filter((doc) => doc.category === "Shared");
 
@@ -104,7 +123,7 @@ export default function DocumentListPage() {
 
     if (doc.isRemote) {
       alert(
-        "깃허브 원격 저장소에 업로드된 공유 문서는 메인 에디터 내부의 [GitHub 저장소에서 관리]를 통해 안전하게 삭제할 수 있습니다.",
+        "깃허브 저장소의 공유 문서는 에디터 내부 푸시나 레포지토리에서 관리할 수 있습니다.",
       );
       return;
     }
@@ -116,7 +135,8 @@ export default function DocumentListPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-12 max-w-6xl mx-auto">
-      <header className="mb-8 flex justify-between items-end">
+      {/* 상단 헤더 섹션 */}
+      <header className="mb-8 flex justify-between items-center">
         <div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
             문서 보관함
@@ -127,52 +147,66 @@ export default function DocumentListPage() {
           </p>
         </div>
 
+        {/* 상단 우측에 완전히 부활한 [새 문서 생성] 버튼 크루 */}
+        <button
+          onClick={handleCreateNewDoc}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5"
+        >
+          <Plus size={16} />새 문서
+        </button>
+      </header>
+
+      {/* 카테고리 탭 인터페이스 */}
+      <div className="flex justify-between items-center border-b border-slate-200 pb-px mb-8">
+        <div className="flex gap-2 overflow-x-auto">
+          {(["All", "Personal", "Shared"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${
+                activeTab === tab
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              {tab === "All"
+                ? "전체 문서"
+                : tab === "Personal"
+                  ? "개인 문서"
+                  : "팀 공유 문서"}
+            </button>
+          ))}
+        </div>
+
+        {/* 원격 동기화 새로고침 아이콘 */}
         {(activeTab === "Shared" || activeTab === "All") && (
           <button
             onClick={fetchGitHubDocuments}
             disabled={isRepoLoading}
-            className="p-2 text-slate-500 hover:text-blue-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+            className="p-2 text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs font-semibold"
+            title="원격 저장소 동기화"
           >
             <RefreshCw
               size={14}
               className={isRepoLoading ? "animate-spin" : ""}
             />
-            원격 동기화
+            <span>원격 동기화</span>
           </button>
         )}
-      </header>
-
-      <div className="flex gap-2 border-b border-slate-200 pb-px mb-8 overflow-x-auto">
-        {(["All", "Personal", "Shared"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${
-              activeTab === tab
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            {tab === "All"
-              ? "전체 문서"
-              : tab === "Personal"
-                ? "개인 문서"
-                : "팀 공유 문서"}
-          </button>
-        ))}
       </div>
 
+      {/* 격자형 문서 보드 */}
       {isRepoLoading && filteredDocuments.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
-          <RefreshCw size={24} className="animate-spin text-blue-500" />
+        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+          <RefreshCw size={20} className="animate-spin text-blue-500" />
           <p className="text-slate-400 text-sm">
-            GitHub 원격 저장소 명세를 페칭 중입니다...
+            GitHub 저장소 명세를 불러오는 중...
           </p>
         </div>
       ) : filteredDocuments.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm">
           <p className="text-slate-400 text-sm">
-            해당 범주에 누적된 문서 사양이 없습니다.
+            해당 범주에 작성된 문서 사양이 없습니다.
           </p>
         </div>
       ) : (
@@ -223,7 +257,6 @@ export default function DocumentListPage() {
                     <button
                       onClick={(e) => handleDelete(e, doc)}
                       className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      title="문서 삭제"
                     >
                       <Trash2 size={15} />
                     </button>
