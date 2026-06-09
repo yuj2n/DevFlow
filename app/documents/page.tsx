@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDocStore } from "@/store/useDocStore";
+import { useConfigStore } from "@/store/useConfigStore"; // 하위 폴더 경로 감지를 위해 추가
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -34,8 +35,10 @@ interface LocalOrRemoteDoc {
 }
 
 export default function DocumentListPage() {
-  const { documents, addDocument, deleteDocument } = useDocStore(); // addDocument 추가
+  const { documents, addDocument, deleteDocument } = useDocStore();
+  const { targetDir } = useConfigStore();
   const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<"All" | "Personal" | "Shared">(
     "All",
   );
@@ -45,8 +48,11 @@ export default function DocumentListPage() {
   const fetchGitHubDocuments = async () => {
     setIsRepoLoading(true);
     try {
-      // 실제 사용하시는 깃허브 목록 조회 API 엔드포인트
-      const response = await axios.get<GitHubFile[]>("/api/github-repos");
+      // 쿼리 스트링으로 하위 폴더 경로(targetDir)를 백엔드 API 라우트에 실시간 전송
+      const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
+      const response = await axios.get<GitHubFile[]>(
+        `/api/github-repos?path=${encodeURIComponent(normalizedDir)}`,
+      );
 
       const formattedGitDocs = response.data
         .filter(
@@ -82,9 +88,8 @@ export default function DocumentListPage() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [activeTab]);
+  }, [activeTab, targetDir]); // 타겟 폴더 경로가 바뀌어도 실시간 재추적
 
-  // 새 문서 만들기 핸들러 (Personal 카테고리로 생성 후 에디터로 이동)
   const handleCreateNewDoc = () => {
     const newId = addDocument({
       title: "제목 없는 문서",
@@ -96,7 +101,7 @@ export default function DocumentListPage() {
 
   const getFilteredDocuments = (): LocalOrRemoteDoc[] => {
     const localPersonal = documents.filter(
-      (doc) => (doc.category || "Personal") === "Personal",
+      (doc) => doc.category === "Personal",
     );
     const localShared = documents.filter((doc) => doc.category === "Shared");
 
@@ -135,28 +140,40 @@ export default function DocumentListPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-12 max-w-6xl mx-auto">
-      {/* 상단 헤더 섹션 */}
       <header className="mb-8 flex justify-between items-center">
         <div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
             문서 보관함
           </h2>
-          <p className="text-slate-500 text-sm mt-3">
-            개인 로컬 보관함 및 원격 팀 GitHub 저장소와 실시간 동기화된 명세를
-            관리합니다.
+          <p className="text-slate-500 text-sm mt-1">
+            개인 로컬 보관함 및 원격 팀 GitHub 저장소의 스펙을 통합 관리합니다.
           </p>
         </div>
 
-        {/* 상단 우측에 완전히 부활한 [새 문서 생성] 버튼 크루 */}
-        <button
-          onClick={handleCreateNewDoc}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5"
-        >
-          <Plus size={16} />새 문서
-        </button>
+        <div className="flex items-center gap-3">
+          {(activeTab === "Shared" || activeTab === "All") && (
+            <button
+              onClick={fetchGitHubDocuments}
+              disabled={isRepoLoading}
+              className="p-2.5 text-slate-500 hover:text-blue-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs font-bold"
+            >
+              <RefreshCw
+                size={14}
+                className={isRepoLoading ? "animate-spin" : ""}
+              />
+              원격 동기화
+            </button>
+          )}
+
+          <button
+            onClick={handleCreateNewDoc}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5"
+          >
+            <Plus size={16} />새 문서
+          </button>
+        </div>
       </header>
 
-      {/* 카테고리 탭 인터페이스 */}
       <div className="flex justify-between items-center border-b border-slate-200 pb-px mb-8">
         <div className="flex gap-2 overflow-x-auto">
           {(["All", "Personal", "Shared"] as const).map((tab) => (
@@ -177,25 +194,8 @@ export default function DocumentListPage() {
             </button>
           ))}
         </div>
-
-        {/* 원격 동기화 새로고침 아이콘 */}
-        {(activeTab === "Shared" || activeTab === "All") && (
-          <button
-            onClick={fetchGitHubDocuments}
-            disabled={isRepoLoading}
-            className="p-2 text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs font-semibold"
-            title="원격 저장소 동기화"
-          >
-            <RefreshCw
-              size={14}
-              className={isRepoLoading ? "animate-spin" : ""}
-            />
-            <span>원격 동기화</span>
-          </button>
-        )}
       </div>
 
-      {/* 격자형 문서 보드 */}
       {isRepoLoading && filteredDocuments.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center gap-2">
           <RefreshCw size={20} className="animate-spin text-blue-500" />
