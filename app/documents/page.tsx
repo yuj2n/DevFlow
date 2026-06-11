@@ -43,7 +43,8 @@ const TEMPLATES = [
     title: "일반 문서 템플릿",
     description: "가장 기본적인 자유 서식의 백지 문서입니다.",
     icon: FileText,
-    color: "bg-blue-50 text-blue-600 border-blue-100",
+    color:
+      "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/30",
     defaultTitle: "제목 없는 일반 문서",
     content:
       "<h3>새로운 자유 문서 작성을 시작해 보세요.</h3><p>여기에 본문 내용을 기입합니다.</p>",
@@ -54,7 +55,8 @@ const TEMPLATES = [
     description:
       "엔드포인트, Request/Response 구조 기술에 최적화된 서식입니다.",
     icon: FileCode,
-    color: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    color:
+      "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30",
     defaultTitle: "새 API SPEC 명세서",
     content: `
       <h2>🚀 API 명세서: [기능 이름]</h2>
@@ -82,7 +84,8 @@ const TEMPLATES = [
     description:
       "회의 개요와 핵심 안건, 다음 작업 내용만 깔끔하게 기록하는 표준 회의록 서식입니다.",
     icon: Users,
-    color: "bg-purple-50 text-purple-600 border-purple-100",
+    color:
+      "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-900/30",
     defaultTitle: "새 회의록 명세서",
     content: `
       <h2>📋 [회의록] 정기 스프린트 및 사양 검토</h2>
@@ -145,6 +148,14 @@ export default function DocumentListPage() {
   const [githubDocs, setGithubDocs] = useState<LocalOrRemoteDoc[]>([]);
   const [isRepoLoading, setIsRepoLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchGitHubDocuments = async () => {
     setIsRepoLoading(true);
@@ -161,7 +172,8 @@ export default function DocumentListPage() {
             (file.name.endsWith(".md") || file.name.endsWith(".json")),
         )
         .map((file, index) => ({
-          id: `github-${file.sha || index}`,
+          // 비산술적 3항 연산자 분기와 String 정적 변환을 통해 타입 연산 에러 완벽 차단
+          id: `github-${file.sha ? file.sha : String(index)}`,
           title: file.name.replace(".md", "").replace(".json", ""),
           content: "",
           category: "Shared",
@@ -179,25 +191,25 @@ export default function DocumentListPage() {
   };
 
   useEffect(() => {
+    if (!mounted) return;
+
     if (activeTab === "Shared" || activeTab === "All") {
       const timer = setTimeout(() => {
         fetchGitHubDocuments();
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, targetDir]);
+  }, [activeTab, targetDir, mounted]);
 
-  // 설정 페이지 컨벤션 분기에 따라 파일 제목 명명 규칙 다이나믹 조립
   const handleSelectTemplate = (template: (typeof TEMPLATES)[0]) => {
     const now = new Date();
     const timeStamp = now
       .toLocaleTimeString("ko-KR", { hour12: false })
       .replace(/:/g, "");
-    const dateStamp = now.toISOString().split("T")[0].replace(/-/g, ""); // 20260611 포맷
+    const dateStamp = now.toISOString().split("T")[0].replace(/-/g, "");
 
     let finalTitle = template.defaultTitle;
 
-    // Zustand 스토어 상태값에 따라 분기 매핑
     if (namingPattern === "title_time") {
       finalTitle = `${template.defaultTitle}_${timeStamp}`;
     } else if (namingPattern === "date_title") {
@@ -249,15 +261,19 @@ export default function DocumentListPage() {
     }
   };
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-white dark:bg-slate-950" />;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 md:p-12 max-w-6xl mx-auto relative">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/40 p-6 md:p-12 max-w-6xl mx-auto relative transition-colors duration-200">
       {/* 상단 헤더 영역 */}
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
             문서 보관함
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 transition-colors">
             개인 로컬 보관함에서 초안을 작성하고, GitHub 푸시를 통해 팀원과
             실시간 명세를 공유합니다.
           </p>
@@ -265,14 +281,14 @@ export default function DocumentListPage() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5 active:scale-95"
         >
           <Plus size={16} />새 문서 작성
         </button>
       </header>
 
       {/* 탭 레이아웃 */}
-      <div className="flex justify-between items-center border-b border-slate-200 pb-px mb-8">
+      <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-px mb-8 transition-colors">
         <div className="flex gap-2 overflow-x-auto">
           {(["All", "Personal", "Shared"] as const).map((tab) => (
             <button
@@ -280,8 +296,8 @@ export default function DocumentListPage() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2.5 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${
                 activeTab === tab
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-400 hover:text-slate-600"
+                  ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
               }`}
             >
               {tab === "All"
@@ -297,7 +313,7 @@ export default function DocumentListPage() {
           <button
             onClick={fetchGitHubDocuments}
             disabled={isRepoLoading}
-            className="p-2 text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs font-semibold"
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1 text-xs font-semibold"
           >
             <RefreshCw
               size={14}
@@ -310,15 +326,15 @@ export default function DocumentListPage() {
 
       {/* Grid 메인 리스트 */}
       {isRepoLoading && filteredDocuments.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center gap-2 transition-colors">
           <RefreshCw size={20} className="animate-spin text-blue-500" />
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 dark:text-slate-500 text-sm">
             GitHub 저장소 명세를 불러오는 중...
           </p>
         </div>
       ) : filteredDocuments.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm">
-          <p className="text-slate-400 text-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-12 text-center shadow-sm transition-colors">
+          <p className="text-slate-400 dark:text-slate-500 text-sm">
             해당 범주에 작성된 문서 사양이 없습니다.
           </p>
         </div>
@@ -334,42 +350,50 @@ export default function DocumentListPage() {
               <Link
                 href={targetHref}
                 key={doc.id}
-                className={`p-5 border rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex flex-col justify-between h-48 group relative ${
+                className={`p-5 border rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex flex-col justify-between h-48 group relative ${
                   isShared
-                    ? "border-emerald-100/80 hover:border-emerald-300"
-                    : "border-blue-100/70 hover:border-blue-300"
+                    ? "border-emerald-100/80 dark:border-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700"
+                    : "border-blue-100/70 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700"
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${isShared ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                      isShared
+                        ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+                        : "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+                    }`}
                   >
                     {isShared ? <Users size={20} /> : <FileText size={20} />}
                   </div>
                   <div className="flex items-center gap-1.5">
                     {doc.isRemote && (
-                      <span className="text-[8px] bg-slate-800 text-slate-100 font-bold px-1.5 py-0.5 rounded">
+                      <span className="text-[8px] bg-slate-800 dark:bg-slate-700 text-slate-100 font-bold px-1.5 py-0.5 rounded transition-colors">
                         GitHub
                       </span>
                     )}
                     <span
-                      className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${isShared ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}
+                      className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider transition-colors ${
+                        isShared
+                          ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
+                          : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                      }`}
                     >
                       {doc.category}
                     </span>
                     <button
                       onClick={(e) => handleDelete(e, doc)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                     >
                       <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
                 <div className="mt-3 flex-1 flex flex-col justify-start">
-                  <h4 className="font-bold text-slate-700 text-base line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+                  <h4 className="font-bold text-slate-700 dark:text-slate-200 text-base line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {doc.title}
                   </h4>
-                  <div className="flex items-center gap-1.5 text-slate-400 text-xs border-t border-slate-50 pt-2 mt-auto">
+                  <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs border-t border-slate-50 dark:border-slate-800/60 pt-2 mt-auto transition-colors">
                     <Calendar size={12} />
                     <span>{doc.updatedAt}</span>
                   </div>
@@ -382,47 +406,47 @@ export default function DocumentListPage() {
 
       {/* 템플릿 모달 팝업 */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-xl overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 w-full max-w-xl overflow-hidden transform transition-all scale-100">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/40 transition-colors">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-800">
+                <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100 transition-colors">
                   문서 템플릿 선택
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 transition-colors">
                   작성하려는 초안 문서의 기본 서식을 골라주세요.
                 </p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
-            <div className="p-6 space-y-3">
+            <div className="p-6 space-y-3 bg-white dark:bg-slate-900 transition-colors">
               {TEMPLATES.map((template) => {
                 const IconComponent = template.icon;
                 return (
                   <button
                     key={template.id}
                     onClick={() => handleSelectTemplate(template)}
-                    className="w-full border border-slate-100 bg-white hover:border-blue-400 hover:bg-blue-50/10 p-4 rounded-xl text-left flex gap-4 transition-all hover:translate-x-1 group active:scale-[0.99] shadow-sm"
+                    className="w-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/10 dark:hover:bg-blue-950/20 p-4 rounded-xl text-left flex gap-4 transition-all hover:translate-x-1 group active:scale-[0.99] shadow-sm"
                   >
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center border flex-shrink-0 ${template.color}`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center border flex-shrink-0 transition-colors ${template.color}`}
                     >
                       <IconComponent size={22} />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <h4 className="font-bold text-slate-700 text-sm group-hover:text-blue-600 transition-colors flex items-center justify-between">
+                      <h4 className="font-bold text-slate-700 dark:text-slate-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center justify-between">
                         {template.title}
                         <Check
                           size={14}
-                          className="text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                         />
                       </h4>
-                      <p className="text-slate-400 text-xs mt-0.5 truncate">
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5 truncate transition-colors">
                         {template.description}
                       </p>
                     </div>
