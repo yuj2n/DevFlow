@@ -11,34 +11,74 @@ import {
   Bell,
   Moon,
   Sun,
-  LayoutTemplate,
   Globe,
   LogIn,
+  FileText,
+  Calendar,
+  Heading,
 } from "lucide-react";
 import { useConfigStore } from "@/store/useConfigStore";
 import Image from "next/image";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const { webhookUrl, theme, setGithubConfig } = useConfigStore();
+  const {
+    webhookUrl,
+    theme,
+    namingPattern,
+    setGithubConfig,
+    setNamingPattern,
+  } = useConfigStore();
 
   const [pendingWebhook, setPendingWebhook] = useState(webhookUrl || "");
   const [pendingTheme, setPendingTheme] = useState(theme || "light");
-  const [pendingTemplate, setPendingTemplate] = useState("standard");
+
+  // 템플릿 대신 네이밍 패턴용 펜딩 상태 바인딩
+  const [pendingPattern, setPendingPatternState] = useState<
+    "title_time" | "date_title" | "title_only"
+  >(namingPattern || "title_time");
+
   const [isSaving, setIsSaving] = useState(false);
 
+  // 설정 저장 버튼 클릭 시 스토어의 setNamingPattern까지 통합 저장 처리
   const handleSaveSettings = () => {
     setIsSaving(true);
+
     setGithubConfig({
       webhookUrl: pendingWebhook,
       theme: pendingTheme,
     });
+    setNamingPattern(pendingPattern); // Zustand 스토어 영속 저장
 
     setTimeout(() => {
       setIsSaving(false);
       alert("설정이 안전하게 저장되었습니다.");
     }, 600);
   };
+
+  const patterns = [
+    {
+      id: "title_time",
+      title: "[제목] + [타임스탬프]",
+      example: "새_API_SPEC_명세서_194405",
+      description: "제목 뒤에 생성 시분초를 붙여 보관함 내 중복을 방지합니다.",
+      icon: FileText,
+    },
+    {
+      id: "date_title",
+      title: "[현재 날짜] + [제목]",
+      example: "20260611_새_API_SPEC_명세서",
+      description: "날짜별로 문서가 정렬되어 히스토리 관리가 용이합니다.",
+      icon: Calendar,
+    },
+    {
+      id: "title_only",
+      title: "[제목] 만 사용",
+      example: "새_API_SPEC_명세서",
+      description: "추가 정보 없이 깔끔한 기본 제목으로 문서를 생성합니다.",
+      icon: Heading,
+    },
+  ] as const;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8 pb-20">
@@ -51,7 +91,7 @@ export default function SettingsPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">환경 설정</h1>
             <p className="text-slate-500 text-sm font-medium">
-              작업 환경과 협업 도구를 구성합니다.
+              작업 환경과 표준 파일 네이밍 컨벤션을 제어합니다.
             </p>
           </div>
         </div>
@@ -70,6 +110,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-10">
+        {/* 계정 관리 섹션 */}
         <section className="space-y-4">
           <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
             <User size={14} /> ACCOUNT
@@ -131,37 +172,69 @@ export default function SettingsPage() {
           )}
         </section>
 
-        {/* 하단 설정 섹션들 (템플릿, 테마, 웹훅) */}
+        {/* 하단 설정 구역 (좌측: 네이밍 규칙 / 우측: 테마 및 알림) */}
         <div className="grid md:grid-cols-2 gap-8">
+          {/* 기존 DOCUMENT TEMPLATE 영역을 NAMING CONVENTION 설정 카드로 리플레이스 */}
           <section className="space-y-4">
             <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
-              <LayoutTemplate size={14} /> DOCUMENT TEMPLATE
+              <FileText size={14} /> NAMING CONVENTION
             </h3>
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
-              <p className="text-[11px] text-slate-400 font-bold leading-relaxed uppercase">
-                Default Layout Selection
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3 shadow-sm">
+              <p className="text-[11px] text-slate-400 font-black leading-relaxed uppercase tracking-wider mb-1">
+                Default File Name Format
               </p>
-              <div className="space-y-2">
-                {["Standard", "API Spec", "Meeting Notes"].map((item) => (
+
+              {patterns.map((pattern) => {
+                const IconComponent = pattern.icon;
+                const isSelected = pendingPattern === pattern.id;
+
+                return (
                   <button
-                    key={item}
-                    onClick={() => setPendingTemplate(item.toLowerCase())}
-                    className={`w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between group ${
-                      pendingTemplate === item.toLowerCase()
-                        ? "border-blue-500 bg-blue-50/30 text-blue-500"
-                        : "border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200"
+                    key={pattern.id}
+                    onClick={() => setPendingPatternState(pattern.id)}
+                    className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 group ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-50/20 text-slate-800"
+                        : "border-slate-100 bg-slate-50/50 text-slate-500 hover:border-slate-200"
                     }`}
                   >
-                    <span className="text-sm font-bold">{item}</span>
                     <div
-                      className={`w-2 h-2 rounded-full transition-all ${pendingTemplate === item.toLowerCase() ? "bg-blue-500 scale-125" : "bg-slate-200 group-hover:bg-slate-300"}`}
-                    />
+                      className={`p-2 rounded-xl border flex-shrink-0 mt-0.5 transition-colors ${
+                        isSelected
+                          ? "bg-white text-blue-600 border-blue-200"
+                          : "bg-white text-slate-400 border-slate-100"
+                      }`}
+                    >
+                      <IconComponent size={14} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold">
+                          {pattern.title}
+                        </span>
+                        <div
+                          className={`w-3 h-3 rounded-full border transition-all ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-500 scale-110"
+                              : "border-slate-300 bg-white"
+                          }`}
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                        {pattern.description}
+                      </p>
+                      <div className="mt-2 text-[9px] font-mono bg-white/80 border border-slate-100 px-2 py-1 rounded-md inline-block text-slate-500">
+                        ex: {pattern.example}
+                      </div>
+                    </div>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </section>
 
+          {/* 우측 설정벨트 (테마 및 알림) */}
           <div className="space-y-6">
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">

@@ -1,45 +1,48 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface GithubConfig {
-  // 깃허브 연동 관련
+interface ConfigState {
   selectedRepo: string;
   targetDir: string;
-  autoPush: boolean;
-  branch: string;
   extension: string;
+  webhookUrl: string; // SettingsPage에서 사용하는 슬랙/디스코드 웹훅 상태
+  theme: string; // SettingsPage에서 라이트/다크모드 제어용 상태
+  namingPattern: "title_time" | "date_title" | "title_only";
 
-  // 협업 및 배포 관련
-  deployUrl: string;
-  webhookUrl: string;
+  setSelectedRepo: (repo: string) => void;
+  setTargetDir: (dir: string) => void;
+  setExtension: (ext: string) => void;
+  setNamingPattern: (
+    pattern: "title_time" | "date_title" | "title_only",
+  ) => void;
 
-  // 서비스 환경 관련
-  theme: "light" | "dark";
-  template: string;
-
-  // 설정 업데이트
-  setGithubConfig: (config: Partial<GithubConfig>) => void;
+  // SettingsPage에서 '설정 저장' 버튼을 누를 때 웹훅과 테마를 통째로 넘겨받는 마스터 세터
+  setGithubConfig: (config: { webhookUrl: string; theme: string }) => void;
 }
 
-export const useConfigStore = create<GithubConfig>()(
+export const useConfigStore = create<ConfigState>()(
   persist(
     (set) => ({
-      // 초기값 설정
       selectedRepo: "",
-      targetDir: "/docs/api-specs",
-      autoPush: true,
-      branch: "main",
+      targetDir: "",
       extension: ".md",
+      webhookUrl: "", // 초기값
+      theme: "light", // 초기값
+      namingPattern: "title_time", // 기본 컨벤션 규칙값
 
-      // 추가된 필드 초기화
-      deployUrl: "",
-      webhookUrl: "",
-      theme: "light",
-      template: "standard",
-      setGithubConfig: (config) => set((state) => ({ ...state, ...config })),
+      setSelectedRepo: (repo) => set({ selectedRepo: repo }),
+      setTargetDir: (dir) => set({ targetDir: dir }),
+      setExtension: (ext) => set({ extension: ext }),
+      setNamingPattern: (pattern) => set({ namingPattern: pattern }),
+
+      // 기존 환경 설정의 데이터가 증발하지 않고 그대로 덮어쓰여 보존되도록 브릿지 바인딩
+      setGithubConfig: (config) =>
+        set((state) => ({
+          ...state,
+          webhookUrl: config.webhookUrl,
+          theme: config.theme,
+        })),
     }),
-    {
-      name: "github-config-storage", // 로컬 스토리지 키 이름
-    },
+    { name: "devflow-config-storage" }, // 로컬스토리지 키 레이블
   ),
 );

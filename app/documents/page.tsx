@@ -136,7 +136,7 @@ const TEMPLATES = [
 
 export default function DocumentListPage() {
   const { documents, addDocument, deleteDocument } = useDocStore();
-  const { targetDir } = useConfigStore();
+  const { targetDir, namingPattern } = useConfigStore();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"All" | "Personal" | "Shared">(
@@ -187,14 +187,27 @@ export default function DocumentListPage() {
     }
   }, [activeTab, targetDir]);
 
-  // 💡 정석 연동: 새 문서는 무조건 내 로컬(Personal) 임시 초안으로 안전하게 생성됩니다.
+  // 설정 페이지 컨벤션 분기에 따라 파일 제목 명명 규칙 다이나믹 조립
   const handleSelectTemplate = (template: (typeof TEMPLATES)[0]) => {
-    const timeStamp = new Date()
+    const now = new Date();
+    const timeStamp = now
       .toLocaleTimeString("ko-KR", { hour12: false })
       .replace(/:/g, "");
+    const dateStamp = now.toISOString().split("T")[0].replace(/-/g, ""); // 20260611 포맷
+
+    let finalTitle = template.defaultTitle;
+
+    // Zustand 스토어 상태값에 따라 분기 매핑
+    if (namingPattern === "title_time") {
+      finalTitle = `${template.defaultTitle}_${timeStamp}`;
+    } else if (namingPattern === "date_title") {
+      finalTitle = `${dateStamp}_${template.defaultTitle}`;
+    } else if (namingPattern === "title_only") {
+      finalTitle = template.defaultTitle;
+    }
 
     const newId = addDocument({
-      title: `${template.defaultTitle}_${timeStamp}`,
+      title: finalTitle,
       content: template.content,
       category: "Personal",
     });
@@ -250,7 +263,6 @@ export default function DocumentListPage() {
           </p>
         </div>
 
-        {/* 💡 단일 진입로 확보: 무조건 새 문서 버튼 하나로 템플릿 유도 */}
         <button
           onClick={() => setIsModalOpen(true)}
           className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/10 transition-all flex items-center gap-1.5"
