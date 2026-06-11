@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Link as LinkIcon,
   FileJson,
@@ -17,6 +17,16 @@ export default function SwaggerImport() {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addDocument } = useDocStore();
+
+  // 하이드레이션 엇박자 방지용 상태 관리
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const isSwaggerData = (data: unknown): data is SwaggerData => {
     if (!data || typeof data !== "object") return false;
@@ -104,20 +114,27 @@ export default function SwaggerImport() {
     }
   };
 
+  // 마운트 완료 전 임시 방어벽 렌더링
+  if (!mounted) {
+    return (
+      <div className="max-w-5xl mx-auto px-16 py-12 w-full bg-white dark:bg-slate-950" />
+    );
+  }
+
   return (
-    <div className="max-w-5xl mx-auto px-16 py-12 w-full">
+    <div className="max-w-5xl mx-auto px-16 py-12 w-full text-slate-900 dark:text-slate-100 transition-colors">
       <div className="flex flex-col md:flex-row gap-6 items-stretch w-full">
         {/* URL 입력 카드 */}
-        <div className="flex-1 bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between min-h-[320px] ">
+        <div className="flex-1 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between min-h-[320px] transition-colors">
           <div className="space-y-6">
-            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center transition-colors">
               <LinkIcon size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-slate-700 text-base">
+              <h3 className="font-bold text-slate-700 dark:text-slate-200 text-base transition-colors">
                 Swagger URL로 연결
               </h3>
-              <p className="text-slate-400 text-xs mt-0.5">
+              <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5 transition-colors">
                 배포된 Swagger UI의 JSON 엔드포인트를 입력하세요.
               </p>
             </div>
@@ -127,11 +144,11 @@ export default function SwaggerImport() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://api.example.com/v1/swagger.json"
-                className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 pl-10 text-slate-600"
+                className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 pl-10 text-slate-600 dark:text-slate-300 transition-all"
               />
               <LinkIcon
                 size={14}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
               />
             </div>
           </div>
@@ -139,7 +156,7 @@ export default function SwaggerImport() {
           <button
             onClick={handleImport}
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-95"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-95 cursor-pointer disabled:bg-slate-400"
           >
             {isLoading ? (
               <RefreshCw size={16} className="animate-spin" />
@@ -168,24 +185,28 @@ export default function SwaggerImport() {
           onClick={() => fileInputRef.current?.click()}
           className={`flex-1 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 cursor-pointer transition-all min-h-[320px] space-y-4 ${
             isDragActive
-              ? "border-blue-500 bg-blue-50/50 scale-[1.01]"
-              : "border-slate-200 bg-white hover:bg-slate-50/50 hover:border-slate-300"
+              ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 scale-[1.01]"
+              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700"
           }`}
         >
           <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDragActive ? "text-blue-500 bg-blue-50" : "text-slate-300 bg-slate-50"}`}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+              isDragActive
+                ? "text-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                : "text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-800/50"
+            }`}
           >
             <FileJson size={24} />
           </div>
           <div className="text-center select-none">
-            <h3 className="font-bold text-slate-700 text-sm">
+            <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm transition-colors">
               JSON / YAML 파일 업로드
             </h3>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 transition-colors">
               파일을 드래그하거나 클릭하여 선택하세요.
             </p>
           </div>
-          <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-blue-100">
+          <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-md uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 transition-colors">
             Local File Only
           </span>
         </div>
