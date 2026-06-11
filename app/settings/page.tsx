@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut, signIn } from "next-auth/react";
 import {
   Settings,
@@ -32,15 +32,20 @@ export default function SettingsPage() {
 
   const [pendingWebhook, setPendingWebhook] = useState(webhookUrl || "");
   const [pendingTheme, setPendingTheme] = useState(theme || "light");
-
-  // 템플릿 대신 네이밍 패턴용 펜딩 상태 바인딩
   const [pendingPattern, setPendingPatternState] = useState<
     "title_time" | "date_title" | "title_only"
   >(namingPattern || "title_time");
 
   const [isSaving, setIsSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // 설정 저장 버튼 클릭 시 스토어의 setNamingPattern까지 통합 저장 처리
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleSaveSettings = () => {
     setIsSaving(true);
 
@@ -48,7 +53,15 @@ export default function SettingsPage() {
       webhookUrl: pendingWebhook,
       theme: pendingTheme,
     });
-    setNamingPattern(pendingPattern); // Zustand 스토어 영속 저장
+    setNamingPattern(pendingPattern);
+
+    if (pendingTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      useConfigStore.setState({ theme: "dark" });
+    } else {
+      document.documentElement.classList.remove("dark");
+      useConfigStore.setState({ theme: "light" });
+    }
 
     setTimeout(() => {
       setIsSaving(false);
@@ -80,17 +93,23 @@ export default function SettingsPage() {
     },
   ] as const;
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-white dark:bg-slate-950" />;
+  }
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 space-y-8 pb-20">
+    <div className="w-full max-w-4xl mx-auto p-6 space-y-8 pb-20 text-slate-900 dark:text-slate-100 transition-colors">
       {/* 헤더 섹션 */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-6">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-100">
+          <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-100 dark:shadow-none">
             <Settings size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">환경 설정</h1>
-            <p className="text-slate-500 text-sm font-medium">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              환경 설정
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               작업 환경과 표준 파일 네이밍 컨벤션을 제어합니다.
             </p>
           </div>
@@ -98,7 +117,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSaveSettings}
           disabled={isSaving}
-          className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200 disabled:bg-slate-400"
+          className="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 transition-all flex items-center gap-2 shadow-lg shadow-slate-200 disabled:bg-slate-400 cursor-pointer"
         >
           {isSaving ? (
             <RefreshCw size={18} className="animate-spin" />
@@ -112,12 +131,13 @@ export default function SettingsPage() {
       <div className="grid gap-10">
         {/* 계정 관리 섹션 */}
         <section className="space-y-4">
-          <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
+          <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
             <User size={14} /> ACCOUNT
           </h3>
 
           {session ? (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+            /* bg-white 카드에 dark:bg-slate-900 및 다크 테두리 추가 */
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:blue-500 rounded-3xl p-6 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   {session.user?.image ? (
@@ -126,45 +146,47 @@ export default function SettingsPage() {
                       alt="profile"
                       width={56}
                       height={56}
-                      className="rounded-2xl border-2 border-white shadow-md object-cover"
+                      className="rounded-2xl border-2 border-white dark:border-slate-800 shadow-md object-cover"
                     />
                   ) : (
-                    <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 border-2 border-white shadow-md">
+                    <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 border-2 border-white dark:border-slate-800 shadow-md">
                       <User size={28} />
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900">
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100">
                     {session.user?.name}
                   </h4>
-                  <p className="text-slate-400 text-xs font-semibold">
+                  <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
                     @{session.user.username || "User"}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => signOut()}
-                className="flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all text-xs font-bold"
+                className="flex items-center gap-2 px-4 py-2 text-slate-400 dark:text-slate-500 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all text-xs font-bold cursor-pointer"
               >
                 <LogOut size={16} /> 로그아웃
               </button>
             </div>
           ) : (
-            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="p-4 bg-white rounded-full shadow-sm text-slate-300">
+            <div className="bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm text-slate-300">
                 <User size={32} />
               </div>
               <div>
-                <p className="text-slate-900 font-bold">로그인이 필요합니다</p>
-                <p className="text-slate-500 text-xs mt-1">
+                <p className="text-slate-900 dark:text-slate-100 font-bold">
+                  로그인이 필요합니다
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
                   GitHub와 연동하여 문서를 자동으로 관리해 보세요.
                 </p>
               </div>
               <button
                 onClick={() => signIn("github")}
-                className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-900 hover:bg-slate-100 transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-sm cursor-pointer"
               >
                 <LogIn size={16} className="text-blue-500" /> GitHub로 시작하기
               </button>
@@ -172,15 +194,15 @@ export default function SettingsPage() {
           )}
         </section>
 
-        {/* 하단 설정 구역 (좌측: 네이밍 규칙 / 우측: 테마 및 알림) */}
+        {/* 하단 설정 구역 */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* 기존 DOCUMENT TEMPLATE 영역을 NAMING CONVENTION 설정 카드로 리플레이스 */}
           <section className="space-y-4">
-            <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
+            <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
               <FileText size={14} /> NAMING CONVENTION
             </h3>
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3 shadow-sm">
-              <p className="text-[11px] text-slate-400 font-black leading-relaxed uppercase tracking-wider mb-1">
+            {/* bg-white 카드에 dark:bg-slate-900 및 다크 테두리 추가 */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-3 shadow-sm">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-black leading-relaxed uppercase tracking-wider mb-1">
                 Default File Name Format
               </p>
 
@@ -192,17 +214,17 @@ export default function SettingsPage() {
                   <button
                     key={pattern.id}
                     onClick={() => setPendingPatternState(pattern.id)}
-                    className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 group ${
+                    className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 group cursor-pointer ${
                       isSelected
-                        ? "border-blue-500 bg-blue-50/20 text-slate-800"
-                        : "border-slate-100 bg-slate-50/50 text-slate-500 hover:border-slate-200"
+                        ? "border-blue-500 bg-blue-50/20 text-slate-900 dark:text-slate-100"
+                        : "border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40 text-slate-500 hover:border-slate-200 dark:hover:border-slate-700"
                     }`}
                   >
                     <div
                       className={`p-2 rounded-xl border flex-shrink-0 mt-0.5 transition-colors ${
                         isSelected
-                          ? "bg-white text-blue-600 border-blue-200"
-                          : "bg-white text-slate-400 border-slate-100"
+                          ? "bg-white dark:bg-slate-800 text-blue-600 border-blue-200 dark:border-blue-700"
+                          : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700"
                       }`}
                     >
                       <IconComponent size={14} />
@@ -210,21 +232,24 @@ export default function SettingsPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold">
+                        <span
+                          className={`text-xs font-bold ${isSelected ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"}`}
+                        >
                           {pattern.title}
                         </span>
                         <div
                           className={`w-3 h-3 rounded-full border transition-all ${
                             isSelected
                               ? "border-blue-500 bg-blue-500 scale-110"
-                              : "border-slate-300 bg-white"
+                              : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                           }`}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                         {pattern.description}
                       </p>
-                      <div className="mt-2 text-[9px] font-mono bg-white/80 border border-slate-100 px-2 py-1 rounded-md inline-block text-slate-500">
+                      {/* ex: 파일명 텍스트 박스 가독성 정밀 보완 */}
+                      <div className="mt-2 text-[9px] font-mono bg-white/80 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-1 rounded-md inline-block text-slate-600 dark:text-slate-300">
                         ex: {pattern.example}
                       </div>
                     </div>
@@ -237,24 +262,25 @@ export default function SettingsPage() {
           {/* 우측 설정벨트 (테마 및 알림) */}
           <div className="space-y-6">
             <section className="space-y-4">
-              <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
+              <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
                 <Settings size={14} /> PREFERENCES
               </h3>
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-6 shadow-sm">
+              {/* 카드 배경 다크모드 색상 전환 */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-6 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     Appearance
                   </span>
-                  <div className="flex bg-slate-100 p-1 rounded-xl">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                     <button
                       onClick={() => setPendingTheme("light")}
-                      className={`p-2 rounded-lg transition-all ${pendingTheme === "light" ? "bg-white text-orange-500 shadow-sm" : "text-slate-400"}`}
+                      className={`p-2 rounded-lg transition-all cursor-pointer ${pendingTheme === "light" ? "bg-white dark:bg-slate-600 text-orange-500 shadow-sm" : "text-slate-400"}`}
                     >
                       <Sun size={16} />
                     </button>
                     <button
                       onClick={() => setPendingTheme("dark")}
-                      className={`p-2 rounded-lg transition-all ${pendingTheme === "dark" ? "bg-white text-blue-500 shadow-sm" : "text-slate-400"}`}
+                      className={`p-2 rounded-lg transition-all cursor-pointer ${pendingTheme === "dark" ? "bg-white dark:bg-slate-600 text-blue-500 shadow-sm" : "text-slate-400"}`}
                     >
                       <Moon size={16} />
                     </button>
@@ -264,12 +290,13 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
-              <h3 className="text-[11px] font-black text-slate-400 px-1 flex items-center gap-2 tracking-widest">
+              <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
                 <Bell size={14} /> NOTIFICATIONS
               </h3>
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+              {/* 카드 배경 및 입력 필드 다크모드 색상 전환 */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 ml-1 uppercase">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 ml-1 uppercase">
                     Webhook Endpoint
                   </label>
                   <div className="relative">
@@ -278,11 +305,11 @@ export default function SettingsPage() {
                       value={pendingWebhook}
                       onChange={(e) => setPendingWebhook(e.target.value)}
                       placeholder="https://hooks.slack.com/..."
-                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-10"
+                      className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-10 text-slate-800 dark:text-slate-100"
                     />
                     <Globe
                       size={14}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-500"
                     />
                   </div>
                 </div>

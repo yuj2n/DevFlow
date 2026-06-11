@@ -2,6 +2,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Tailwind v4 수동 다크모드 변수 규칙 선언 (class="dark" 감지기) */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,18 +13,25 @@
     system-ui, Roboto, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 수동 다크모드(`.dark`)일 때 전역 배경색/글자색 변수 반전 처리 */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
+/* 시스템 테마(OS)가 다크일 때도 자동으로 지원하게 유지 */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+/* 테마 인라인 맵핑 변수 뒤틀림 정밀 교정 */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-pretendard);
 }
 
 body {
@@ -32,13 +42,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.015em;
   line-height: 1.6;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease; /* 💡 화면 전환 부드럽게 */
 }
 
 /* --- 에디터 본문(prose) 공통 설정 --- */
 .prose {
   font-family: var(--font-pretendard);
-  color: #1a1a1a !important; /* 글씨색 더 진하게 고정 */
+  color: #1a1a1a !important; /* 평소엔 글씨색 진하게 고정 */
   max-width: none !important;
+}
+
+/* 에디터 내부도 다크모드일 때는 글씨가 보여야 하므로 다크모드 전용 색상 입히기 */
+.dark .prose {
+  color: #ededed !important;
 }
 
 /* 1. 일반 문단(p) 간격: 평소엔 아주 촘촘하게 */
@@ -58,11 +76,16 @@ html body .prose li {
   margin-bottom: 0.3rem !important;
 }
 
-/* 4. 리스트 점(marker) 및 숫자 색상: 희끄무리한 것 방지 */
+/* 4. 리스트 점(marker) 및 숫자 색상 */
 html body .prose ul > li::marker,
 html body .prose ol > li::marker {
   color: #000000 !important;
   font-weight: bold !important;
+}
+/* 다크모드용 리스트 점 색상 맵핑 */
+.dark html body .prose ul > li::marker,
+.dark html body .prose ol > li::marker {
+  color: #ffffff !important;
 }
 
 /* 5. 리스트 내부 p 태그: 여백 완전히 죽이기 */
@@ -80,6 +103,10 @@ html body .prose li p {
   border: 1px solid #3e4451;
   margin-top: 1.5rem !important;
   margin-bottom: 1.5rem !important;
+}
+
+.prose pre dark:border-slate-800 {
+  border-color: #2e3440 !important;
 }
 
 .prose pre code {
@@ -137,7 +164,18 @@ html body .prose li p {
   min-width: 1em;
 }
 
+/* 다크모드 테이블 테두리 대응 */
+.dark .ProseMirror td,
+.dark .ProseMirror th {
+  border-color: #3e4451;
+}
+
 .ProseMirror th {
   background-color: #f8fafc;
   font-weight: bold;
+}
+/* 다크모드 테이블 헤더 배경 대응 */
+.dark .ProseMirror th {
+  background-color: #1e2227;
+  color: #ededed;
 }
