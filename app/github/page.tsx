@@ -1,20 +1,37 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import GithubConnect from "@/components/Github/GithubConnect";
 
 export default function GithubPage() {
+  const [mounted, setMounted] = useState(false);
+
+  // 하이드레이션 에러 방지를 위한 마운트 상태 제어
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-white dark:bg-slate-950" />;
+  }
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* 페이지 헤더 */}
-      <div className="py-12 px-8 border-b border-slate-50">
+      <div className="py-12 px-8 border-b border-slate-50 dark:border-slate-900 transition-colors">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-2 text-slate-400">
+          <div className="flex items-center gap-3 mb-2 text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold uppercase tracking-widest">
               Integrations
             </span>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
             GitHub 연동
           </h1>
-          <p className="text-slate-500 mt-2 text-lg">
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">
             문서를 깃허브 저장소와 연결하여 코드와 함께 관리하세요.
           </p>
         </div>
