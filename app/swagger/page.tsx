@@ -2,17 +2,10 @@
 
 import { useState, useEffect } from "react";
 import SwaggerImport from "@/components/Swagger/SwaggerImport";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function SwaggerPage() {
-  const [mounted, setMounted] = useState(false);
-
-  // 하이드레이션 에러 방지를 위한 마운트 상태 제어
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   if (!mounted) {
     return <div className="min-h-screen bg-white dark:bg-slate-950" />;

@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import axios from "axios";
+import { useMounted } from "@/hooks/useMounted";
 
 interface GitHubFile {
   name: string;
@@ -148,14 +149,7 @@ export default function DocumentListPage() {
   const [githubDocs, setGithubDocs] = useState<LocalOrRemoteDoc[]>([]);
   const [isRepoLoading, setIsRepoLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   const fetchGitHubDocuments = async () => {
     setIsRepoLoading(true);

@@ -10,6 +10,7 @@ import {
 import axios from "axios";
 import { parseSwaggerToHtml, type SwaggerData } from "@/lib/swagger-parser";
 import { useDocStore } from "@/store/useDocStore";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function SwaggerImport() {
   const [url, setUrl] = useState("");
@@ -17,16 +18,7 @@ export default function SwaggerImport() {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addDocument } = useDocStore();
-
-  // 하이드레이션 엇박자 방지용 상태 관리
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   const isSwaggerData = (data: unknown): data is SwaggerData => {
     if (!data || typeof data !== "object") return false;

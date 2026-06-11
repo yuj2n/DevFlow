@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useConfigStore } from "@/store/useConfigStore";
 import Image from "next/image";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -37,14 +38,7 @@ export default function SettingsPage() {
   >(namingPattern || "title_time");
 
   const [isSaving, setIsSaving] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   const handleSaveSettings = () => {
     setIsSaving(true);
@@ -117,7 +111,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSaveSettings}
           disabled={isSaving}
-          className="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 transition-all flex items-center gap-2 shadow-lg shadow-slate-200 disabled:bg-slate-400 cursor-pointer"
+          className="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 transition-all flex items-center gap-2 shadow-lg shadow-slate-200 disabled:bg-slate-400 cursor-pointer dark:shadow-none"
         >
           {isSaving ? (
             <RefreshCw size={18} className="animate-spin" />
@@ -259,7 +253,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* 우측 설정벨트 (테마 및 알림) */}
+          {/* 우측 설정 (테마 및 알림) */}
           <div className="space-y-6">
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">

@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
 import { requestGithubPush } from "@/lib/github";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function EditorPage() {
   const params = useParams();
@@ -20,14 +21,7 @@ export default function EditorPage() {
   const [isPushing, setIsPushing] = useState(false);
 
   // 하이드레이션 에러 방지를 위한 마운트 상태 관리
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   const doc = documents.find((d) => d.id === id);
 

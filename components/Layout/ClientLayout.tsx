@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import SideTabBar from "@/components/Navigation/SideTabBar";
 import { useConfigStore } from "@/store/useConfigStore";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function ClientLayout({
   children,
@@ -14,14 +15,7 @@ export default function ClientLayout({
   const isLandingPage = pathname === "/";
 
   const { theme } = useConfigStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (!mounted) return;

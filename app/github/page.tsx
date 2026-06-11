@@ -2,17 +2,10 @@
 
 import { useState, useEffect } from "react";
 import GithubConnect from "@/components/Github/GithubConnect";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function GithubPage() {
-  const [mounted, setMounted] = useState(false);
-
-  // 하이드레이션 에러 방지를 위한 마운트 상태 제어
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   if (!mounted) {
     return <div className="min-h-screen bg-white dark:bg-slate-950" />;

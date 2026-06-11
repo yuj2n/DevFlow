@@ -12,6 +12,7 @@ import {
 import { useConfigStore } from "@/store/useConfigStore";
 import axios from "axios";
 import Image from "next/image";
+import { useMounted } from "@/hooks/useMounted";
 
 const GithubLogo = ({ size = 24 }: { size?: number }) => (
   <svg
@@ -52,16 +53,7 @@ export default function GithubConnect() {
   const [pendingBranch, setPendingBranch] = useState(() => branch || "main");
   const [pendingExt, setPendingExt] = useState(() => extension || ".md");
   const [isSaving, setIsSaving] = useState(false);
-
-  // 하이드레이션 엇박자 에러 방지용 마운트 상태 관리
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (session) {
