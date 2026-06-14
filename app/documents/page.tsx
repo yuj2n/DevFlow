@@ -89,13 +89,14 @@ const TEMPLATES = [
     color:
       "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-900/30",
     defaultTitle: "새 회의록 명세서",
+    // 모듈 로드 시점에 날짜가 동결되는 하드코딩 식을 배제하고, 런타임 조립용 치트키 토큰({{DATE}})을 매립합니다.
     content: `
       <h2>📋 [회의록] 정기 스프린트 및 사양 검토</h2>
       <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
         <tbody>
           <tr>
             <td style="background-color: #f8fafc; font-weight: bold; width: 20%; padding: 6px; text-align: center;">일시</td>
-            <td style="padding: 6px;">${new Date().toLocaleDateString()}</td>
+            <td style="padding: 6px;">{{DATE}}</td>
             <td style="background-color: #f8fafc; font-weight: bold; width: 20%; padding: 6px; text-align: center;">작성자</td>
             <td style="padding: 6px;">팀원A</td>
           </tr>
@@ -156,7 +157,6 @@ export default function DocumentListPage() {
   const fetchGitHubDocuments = async () => {
     if (!session || !session.user || !session.user.username) return;
 
-    // 선택된 레포가 아예 없을 시 불필요한 API 호출을 차단하고 격리
     if (!selectedRepo) {
       console.log("선택된 GitHub 저장소가 없어 목록 페칭을 스킵합니다.");
       setGithubDocs([]);
@@ -167,8 +167,6 @@ export default function DocumentListPage() {
     try {
       const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
 
-      // 원래 주소를 안정적으로 냅두되,
-      // 코드래빗이 요구한 selectedRepo와 path 파라미터를 정확하게 결합하여 송출합니다.
       const response = await axios.get<GitHubFile[]>(
         `/api/github-repos?repo=${encodeURIComponent(selectedRepo)}&path=${encodeURIComponent(normalizedDir)}`,
       );
@@ -228,9 +226,13 @@ export default function DocumentListPage() {
       finalTitle = template.defaultTitle;
     }
 
+    // 템플릿 카드를 누르는 '지금 이 시점'의 로컬 날짜를 구하여 문자열 내부의 토큰을 동적으로 갈아끼웁니다.
+    const currentLocalDate = now.toLocaleDateString();
+    const finalContent = template.content.replace("{{DATE}}", currentLocalDate);
+
     const newId = addDocument({
       title: finalTitle,
-      content: template.content,
+      content: finalContent,
       category: "Personal",
     });
 
