@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
 
 기존 외부 URL을 직접 찌르던 로직을 방금 만든 내부 프록시 라우터 주소로 우회하여 요청합니다.
 
-**파일명: `components/Swagger/SwaggerImport.tsx` 내부 일부**
+파일명: `components/Swagger/SwaggerImport.tsx` 내부 일부
+링크: https://github.com/yuj2n/DevFlow/blob/main/app/api/proxy-swagger/route.ts
 
 ```typescript
 const handleImport = async () => {

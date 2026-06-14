@@ -14,7 +14,8 @@
 
 드래그 오버(`dragover`), 드래그 리브(`dragleave`), 드롭(`drop`) 이벤트를 정밀 제어하여 사용자의 액션에 따라 시각적 피드백을 동적으로 제공하는 드롭존(Dropzone) 컨테이너를 구현합니다.
 
-**파일명: `components/Swagger/SwaggerImport.tsx` 일부**
+파일명: `components/Swagger/SwaggerImport.tsx` 일부
+링크: https://github.com/yuj2n/DevFlow/blob/main/components/Swagger/SwaggerImport.tsx
 
 ```tsx
 "use client";

@@ -10,7 +10,8 @@
 
 서버 컴포넌트나 API Route 내부에서만 접근 가능한 JWT로부터 직접 토큰을 읽어 GitHub API와 통신합니다.
 
-**파일명: `app/api/github-push/route.ts**`
+파일명: `app/api/github-push/route.ts`
+링크: https://github.com/yuj2n/DevFlow/blob/main/app/api/github-push/route.ts
 
 ```typescript
 import { getToken } from "next-auth/jwt";

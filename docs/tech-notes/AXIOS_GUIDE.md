@@ -12,7 +12,8 @@
 
 TypeScript 환경에서 `unknown` 에러 객체로부터 서버 메시지를 안전하게 추출하기 위해 `axios.isAxiosError` 가드를 사용합니다.
 
-**파일명: `lib/github.ts**`
+파일명: `lib/github.ts`
+링크: https://github.com/yuj2n/DevFlow/blob/main/lib/github.ts
 
 ```typescript
 import axios from "axios";
@@ -36,4 +37,5 @@ export const requestGithubPush = async (params: PushParams) => {
 ---
 
 ## 후배 개발자를 위한 팁
+
 - "fetch가 내장 함수라 편해 보이지만, 규모가 커지면 axios의 인터셉터나 자동 설정 기능이 훨씬 강력합니다. 처음부터 라이브러리를 쓰기보다 fetch로 고생을 조금 해본 뒤에 axios로 넘어오면 그 편리함을 체감할 수 있을 거예요."
