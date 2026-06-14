@@ -9,6 +9,7 @@ import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
 import { requestGithubPush } from "@/lib/github";
 import { useMounted } from "@/hooks/useMounted";
+import { sendNotificationWebhook } from "@/lib/webhook";
 
 export default function EditorPage() {
   const params = useParams();
@@ -17,10 +18,9 @@ export default function EditorPage() {
   const { documents, updateDocument } = useDocStore();
 
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
-  const { selectedRepo, targetDir, extension } = useConfigStore();
+  const { selectedRepo, targetDir, extension, webhookUrl } = useConfigStore();
   const [isPushing, setIsPushing] = useState(false);
 
-  // 하이드레이션 에러 방지를 위한 마운트 상태 관리
   const mounted = useMounted();
 
   const doc = documents.find((d) => d.id === id);
@@ -32,7 +32,7 @@ export default function EditorPage() {
 
     if (!owner) {
       alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
-      router.push("/settings/github");
+      router.push("/settings");
       return;
     }
 
@@ -42,7 +42,7 @@ export default function EditorPage() {
           "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
         )
       ) {
-        router.push("/settings/github");
+        router.push("/github");
       }
       return;
     }
@@ -53,7 +53,6 @@ export default function EditorPage() {
       let content = doc.content;
       const savedCodeBlocks: { language: string; code: string }[] = [];
 
-      // 코드 블록 스캔 및 언어 추출 격리
       content = content.replace(
         /<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi,
         (match, attributes, p1) => {
@@ -70,7 +69,6 @@ export default function EditorPage() {
         },
       );
 
-      // Swagger 테이블 변환
       content = content.replace(
         /<table[^>]*>([\s\S]*?)<\/table>/gi,
         (match) => {
@@ -106,7 +104,6 @@ export default function EditorPage() {
         },
       );
 
-      // 일반 HTML 태그 및 리스트 서식 변환
       content = content
         .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
         .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
@@ -129,10 +126,8 @@ export default function EditorPage() {
         })
         .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
 
-      // 잔여 태그 소거
       content = content.replace(/<\/?[^>]+(>|$)/g, "");
 
-      // 코드 블록 원본 복원
       savedCodeBlocks.forEach((block, index) => {
         content = content.replace(
           `##CODE_BLOCK_PLACEHOLDER_${index}##`,
@@ -159,7 +154,19 @@ export default function EditorPage() {
 
       updateDocument(doc.id, doc.title, doc.content, "Shared");
 
-      alert("GitHub 푸시가 성공적으로 완료되었습니다.");
+      // 저장소 푸시 완료 직후, 유저가 설정한 디스코드/슬랙 웹훅 주소로 실시간 알림 피드 전송
+      if (webhookUrl) {
+        await sendNotificationWebhook({
+          url: webhookUrl,
+          title: doc.title,
+          action: "share",
+          author: session?.user?.name || owner,
+        });
+      }
+
+      alert(
+        "GitHub 푸시 및 실시간 메신저 알림 배포가 성공적으로 완료되었습니다.",
+      );
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -171,7 +178,6 @@ export default function EditorPage() {
     }
   };
 
-  // 마운트 로드 전 임시 렌더링 방어
   if (!mounted) {
     return <div className="min-h-screen bg-white dark:bg-slate-950" />;
   }

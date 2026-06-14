@@ -1,3 +1,5 @@
+"use client";
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -48,25 +50,46 @@ export const useConfigStore = create<ConfigState>()(
       setNamingPattern: (pattern) => set({ namingPattern: pattern }),
 
       setGithubConfig: (config) =>
-        set((state) => ({
-          ...state,
-          selectedRepo:
+        set((state) => {
+          const nextSelectedRepo =
             config.selectedRepo !== undefined
               ? config.selectedRepo
-              : state.selectedRepo,
-          targetDir:
-            config.targetDir !== undefined ? config.targetDir : state.targetDir,
-          webhookUrl:
+              : state.selectedRepo;
+          const nextTargetDir =
+            config.targetDir !== undefined ? config.targetDir : state.targetDir;
+          const nextWebhookUrl =
             config.webhookUrl !== undefined
               ? config.webhookUrl
-              : state.webhookUrl,
-          theme: config.theme !== undefined ? config.theme : state.theme,
-          autoPush:
-            config.autoPush !== undefined ? config.autoPush : state.autoPush,
-          branch: config.branch !== undefined ? config.branch : state.branch,
-          extension:
-            config.extension !== undefined ? config.extension : state.extension,
-        })),
+              : state.webhookUrl;
+          const nextTheme =
+            config.theme !== undefined ? config.theme : state.theme;
+          const nextAutoPush =
+            config.autoPush !== undefined ? config.autoPush : state.autoPush;
+          const nextBranch =
+            config.branch !== undefined ? config.branch : state.branch;
+          const nextExtension =
+            config.extension !== undefined ? config.extension : state.extension;
+
+          // 테마 변경 값이 유입될 때 브라우저 HTML 돔 클래스에도 동시 적용해 주는 안전장치 매립
+          if (config.theme !== undefined) {
+            if (config.theme === "dark") {
+              document.documentElement.classList.add("dark");
+            } else {
+              document.documentElement.classList.remove("dark");
+            }
+          }
+
+          return {
+            ...state,
+            selectedRepo: nextSelectedRepo,
+            targetDir: nextTargetDir,
+            webhookUrl: nextWebhookUrl,
+            theme: nextTheme,
+            autoPush: nextAutoPush,
+            branch: nextBranch,
+            extension: nextExtension,
+          };
+        }),
     }),
     { name: "devflow-config-storage" }, // 로컬스토리지 영속화 키 레이블
   ),

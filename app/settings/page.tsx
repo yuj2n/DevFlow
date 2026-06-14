@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession, signOut, signIn } from "next-auth/react";
 import {
   Settings,
@@ -48,6 +47,7 @@ export default function SettingsPage() {
     setNamingPattern(nextPattern);
   };
 
+  // 컴포넌트 내부 State를 아예 거치지 않고 Zustand 스토어에 직접 주입하여 연쇄 반응 차단
   const handleWebhookChange = (nextUrl: string) => {
     setGithubConfig({ webhookUrl: nextUrl });
   };
@@ -218,7 +218,6 @@ export default function SettingsPage() {
                         {pattern.description}
                       </p>
 
-                      {/* 카드 클릭 유무와 관계없이 항상 어두운 모드와 라이트 모드에서 가독성이 최상으로 확보되도록 마감처리 */}
                       <div className="mt-2 text-[9px] font-mono bg-white dark:bg-slate-950 border border-blue-200 dark:border-blue-900/60 px-2 py-1 rounded-md inline-block font-bold shadow-sm">
                         ex: {pattern.example}
                       </div>
@@ -268,9 +267,10 @@ export default function SettingsPage() {
                     Webhook Endpoint
                   </label>
                   <div className="relative">
+                    {/* value를 전역 스토어 상태인 webhookUrl로 다이렉트 맵핑 */}
                     <input
                       type="text"
-                      value={webhookUrl}
+                      value={webhookUrl || ""}
                       onChange={(e) => handleWebhookChange(e.target.value)}
                       placeholder="https://hooks.slack.com/..."
                       className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-10 text-slate-800 dark:text-slate-100"
