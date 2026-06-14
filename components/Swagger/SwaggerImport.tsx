@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Link as LinkIcon,
   FileJson,
@@ -75,7 +75,7 @@ export default function SwaggerImport() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
         const json = JSON.parse(e.target?.result as string);
         if (!isSwaggerData(json)) {
@@ -134,7 +134,9 @@ export default function SwaggerImport() {
               <input
                 type="text"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setUrl(e.target.value)
+                }
                 placeholder="https://api.example.com/v1/swagger.json"
                 className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 pl-10 text-slate-600 dark:text-slate-300 transition-all"
               />
@@ -160,12 +162,19 @@ export default function SwaggerImport() {
           </button>
         </div>
 
+        {/* 인풋 업로드 핸들러 내부에서 처리가 마무리된 뒤 가치값(value)을 즉시 강제 리셋하여 동일 파일 무한 재시도가 가능하도록 설계 교정 */}
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
           accept=".json"
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              handleFile(file);
+              e.currentTarget.value = "";
+            }
+          }}
         />
 
         {/* 파일 업로드 드롭존 카드 */}
