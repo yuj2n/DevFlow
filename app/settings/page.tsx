@@ -31,7 +31,6 @@ export default function SettingsPage() {
 
   const mounted = useMounted();
 
-  // 라이트/다크모드 상태 변경 발생 시 즉각 스토어와 돔에 교차 동기화
   const handleThemeChange = (nextTheme: "light" | "dark") => {
     setGithubConfig({ theme: nextTheme });
     useConfigStore.setState({ theme: nextTheme });
@@ -43,14 +42,12 @@ export default function SettingsPage() {
     }
   };
 
-  // 네이밍 패턴 클릭 시 즉시 영속성 저장 처리
   const handlePatternChange = (
     nextPattern: "title_time" | "date_title" | "title_only",
   ) => {
     setNamingPattern(nextPattern);
   };
 
-  // 웹훅 엔드포인트 문자열 입력 시 즉각 스토어 반영
   const handleWebhookChange = (nextUrl: string) => {
     setGithubConfig({ webhookUrl: nextUrl });
   };
@@ -85,7 +82,7 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8 pb-20 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* 헤더 섹션 - 저장 버튼 제거 */}
+      {/* 헤더 섹션 */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-100 dark:shadow-none">
@@ -205,7 +202,7 @@ export default function SettingsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center">
                         <span
-                          className={`text-xs font-bold ${isSelected ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"}`}
+                          className={`text-xs font-bold ${isSelected ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-300"}`}
                         >
                           {pattern.title}
                         </span>
@@ -217,10 +214,12 @@ export default function SettingsPage() {
                           }`}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+                      <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-tight">
                         {pattern.description}
                       </p>
-                      <div className="mt-2 text-[9px] font-mono bg-white/80 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-1 rounded-md inline-block text-slate-600 dark:text-slate-300">
+
+                      {/* 카드 클릭 유무와 관계없이 항상 어두운 모드와 라이트 모드에서 가독성이 최상으로 확보되도록 마감처리 */}
+                      <div className="mt-2 text-[9px] font-mono bg-white dark:bg-slate-950 border border-blue-200 dark:border-blue-900/60 px-2 py-1 rounded-md inline-block font-bold shadow-sm">
                         ex: {pattern.example}
                       </div>
                     </div>
