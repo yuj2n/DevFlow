@@ -6,8 +6,6 @@ import {
   Settings,
   User,
   LogOut,
-  Save,
-  RefreshCw,
   Bell,
   Moon,
   Sun,
@@ -31,36 +29,30 @@ export default function SettingsPage() {
     setNamingPattern,
   } = useConfigStore();
 
-  const [pendingWebhook, setPendingWebhook] = useState(webhookUrl || "");
-  const [pendingTheme, setPendingTheme] = useState(theme || "light");
-  const [pendingPattern, setPendingPatternState] = useState<
-    "title_time" | "date_title" | "title_only"
-  >(namingPattern || "title_time");
-
-  const [isSaving, setIsSaving] = useState(false);
   const mounted = useMounted();
 
-  const handleSaveSettings = () => {
-    setIsSaving(true);
+  // 라이트/다크모드 상태 변경 발생 시 즉각 스토어와 돔에 교차 동기화
+  const handleThemeChange = (nextTheme: "light" | "dark") => {
+    setGithubConfig({ theme: nextTheme });
+    useConfigStore.setState({ theme: nextTheme });
 
-    setGithubConfig({
-      webhookUrl: pendingWebhook,
-      theme: pendingTheme,
-    });
-    setNamingPattern(pendingPattern);
-
-    if (pendingTheme === "dark") {
+    if (nextTheme === "dark") {
       document.documentElement.classList.add("dark");
-      useConfigStore.setState({ theme: "dark" });
     } else {
       document.documentElement.classList.remove("dark");
-      useConfigStore.setState({ theme: "light" });
     }
+  };
 
-    setTimeout(() => {
-      setIsSaving(false);
-      alert("설정이 안전하게 저장되었습니다.");
-    }, 600);
+  // 네이밍 패턴 클릭 시 즉시 영속성 저장 처리
+  const handlePatternChange = (
+    nextPattern: "title_time" | "date_title" | "title_only",
+  ) => {
+    setNamingPattern(nextPattern);
+  };
+
+  // 웹훅 엔드포인트 문자열 입력 시 즉각 스토어 반영
+  const handleWebhookChange = (nextUrl: string) => {
+    setGithubConfig({ webhookUrl: nextUrl });
   };
 
   const patterns = [
@@ -93,7 +85,7 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8 pb-20 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* 헤더 섹션 */}
+      {/* 헤더 섹션 - 저장 버튼 제거 */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-100 dark:shadow-none">
@@ -104,22 +96,10 @@ export default function SettingsPage() {
               환경 설정
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-              작업 환경과 표준 파일 네이밍 컨벤션을 제어합니다.
+              변경한 설정은 실시간으로 저장 스토어와 시스템 환경에 반영됩니다.
             </p>
           </div>
         </div>
-        <button
-          onClick={handleSaveSettings}
-          disabled={isSaving}
-          className="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 transition-all flex items-center gap-2 shadow-lg shadow-slate-200 disabled:bg-slate-400 cursor-pointer dark:shadow-none"
-        >
-          {isSaving ? (
-            <RefreshCw size={18} className="animate-spin" />
-          ) : (
-            <Save size={18} />
-          )}
-          설정 저장
-        </button>
       </div>
 
       <div className="grid gap-10">
@@ -130,8 +110,7 @@ export default function SettingsPage() {
           </h3>
 
           {session ? (
-            /* bg-white 카드에 dark:bg-slate-900 및 다크 테두리 추가 */
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:blue-500 rounded-3xl p-6 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   {session.user?.image ? (
@@ -194,7 +173,6 @@ export default function SettingsPage() {
             <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
               <FileText size={14} /> NAMING CONVENTION
             </h3>
-            {/* bg-white 카드에 dark:bg-slate-900 및 다크 테두리 추가 */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-3 shadow-sm">
               <p className="text-[11px] text-slate-400 dark:text-slate-500 font-black leading-relaxed uppercase tracking-wider mb-1">
                 Default File Name Format
@@ -202,12 +180,12 @@ export default function SettingsPage() {
 
               {patterns.map((pattern) => {
                 const IconComponent = pattern.icon;
-                const isSelected = pendingPattern === pattern.id;
+                const isSelected = namingPattern === pattern.id;
 
                 return (
                   <button
                     key={pattern.id}
-                    onClick={() => setPendingPatternState(pattern.id)}
+                    onClick={() => handlePatternChange(pattern.id)}
                     className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 group cursor-pointer ${
                       isSelected
                         ? "border-blue-500 bg-blue-50/20 text-slate-900 dark:text-slate-100"
@@ -242,7 +220,6 @@ export default function SettingsPage() {
                       <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                         {pattern.description}
                       </p>
-                      {/* ex: 파일명 텍스트 박스 가독성 정밀 보완 */}
                       <div className="mt-2 text-[9px] font-mono bg-white/80 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-1 rounded-md inline-block text-slate-600 dark:text-slate-300">
                         ex: {pattern.example}
                       </div>
@@ -253,13 +230,12 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* 우측 설정 (테마 및 알림) */}
+          {/* 우측 설정 구역 (테마 및 알림) */}
           <div className="space-y-6">
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
                 <Settings size={14} /> PREFERENCES
               </h3>
-              {/* 카드 배경 다크모드 색상 전환 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -267,14 +243,14 @@ export default function SettingsPage() {
                   </span>
                   <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                     <button
-                      onClick={() => setPendingTheme("light")}
-                      className={`p-2 rounded-lg transition-all cursor-pointer ${pendingTheme === "light" ? "bg-white dark:bg-slate-600 text-orange-500 shadow-sm" : "text-slate-400"}`}
+                      onClick={() => handleThemeChange("light")}
+                      className={`p-2 rounded-lg transition-all cursor-pointer ${theme === "light" ? "bg-white dark:bg-slate-600 text-orange-500 shadow-sm" : "text-slate-400"}`}
                     >
                       <Sun size={16} />
                     </button>
                     <button
-                      onClick={() => setPendingTheme("dark")}
-                      className={`p-2 rounded-lg transition-all cursor-pointer ${pendingTheme === "dark" ? "bg-white dark:bg-slate-600 text-blue-500 shadow-sm" : "text-slate-400"}`}
+                      onClick={() => handleThemeChange("dark")}
+                      className={`p-2 rounded-lg transition-all cursor-pointer ${theme === "dark" ? "bg-white dark:bg-slate-600 text-blue-500 shadow-sm" : "text-slate-400"}`}
                     >
                       <Moon size={16} />
                     </button>
@@ -287,7 +263,6 @@ export default function SettingsPage() {
               <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 flex items-center gap-2 tracking-widest">
                 <Bell size={14} /> NOTIFICATIONS
               </h3>
-              {/* 카드 배경 및 입력 필드 다크모드 색상 전환 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 ml-1 uppercase">
@@ -296,8 +271,8 @@ export default function SettingsPage() {
                   <div className="relative">
                     <input
                       type="text"
-                      value={pendingWebhook}
-                      onChange={(e) => setPendingWebhook(e.target.value)}
+                      value={webhookUrl}
+                      onChange={(e) => handleWebhookChange(e.target.value)}
                       placeholder="https://hooks.slack.com/..."
                       className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-10 text-slate-800 dark:text-slate-100"
                     />
