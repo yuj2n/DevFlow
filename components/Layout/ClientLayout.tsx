@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useSidebarStore } from "@/store/useSidebarStore";
 import SideTabBar from "@/components/Navigation/SideTabBar";
+import { useConfigStore } from "@/store/useConfigStore";
+import { useMounted } from "@/hooks/useMounted";
 
 export default function ClientLayout({
   children,
@@ -12,21 +14,31 @@ export default function ClientLayout({
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
 
-  // Zustand에서 사이드바 상태 가져오기
-  const { isExpanded } = useSidebarStore();
+  const { theme } = useConfigStore();
+  const mounted = useMounted();
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme, mounted]);
+
+  if (!mounted) {
+    return <div className="h-full bg-white dark:bg-slate-950" />;
+  }
 
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* 1. 메인이 아닐 때만 사이드바 표시 */}
+    <div className="h-full flex overflow-hidden dark:text-slate-100 transition-colors duration-300">
+      {/* 메인이 아닐 때만 사이드바 표시 */}
       {!isLandingPage && <SideTabBar />}
 
-      {/* 2. 메인 영역: 사이드바 너비만큼 왼쪽 여백을 유동적으로 조절 */}
+      {/* 메인 영역 */}
       <main
-        className={`flex-1 min-w-0 h-full overflow-y-auto bg-white transition-all duration-300 ease-in-out
-         
-          /* 모바일 대응: 화면이 아주 작을 때는 사이드바를 숨기거나 패딩을 없애는 설정 */
-          max-md:pl-0 
-        `}
+        className={`flex-1 min-w-0 h-full overflow-y-auto bg-white dark:bg-slate-950 transition-all duration-300 ease-in-out max-md:pl-0`}
       >
         {children}
       </main>

@@ -22,10 +22,10 @@
 import { useState } from "react";
 
 export default function SwaggerImport() {
-  // 💡 드래그가 활성화(컨테이너 위로 진입) 되었는지 관리하는 상태
+  // 드래그가 활성화(컨테이너 위로 진입) 되었는지 관리하는 상태
   const [isDragActive, setIsDragActive] = useState(false);
 
-  // 💡 드래그 진입 및 오버 시 브라우저 기본 전송 동작 차단 및 하이라이팅 활성화
+  // 드래그 진입 및 오버 시 브라우저 기본 전송 동작 차단 및 하이라이팅 활성화
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -42,7 +42,7 @@ export default function SwaggerImport() {
     e.stopPropagation();
     setIsDragActive(false); // 드롭 완료 시 하이라이팅 해제
 
-    // 💡 드롭된 파일 래퍼 객체 추출 후 처리 핸들러로 이송
+    // 드롭된 파일 래퍼 객체 추출 후 처리 핸들러로 이송
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
@@ -77,18 +77,18 @@ export default function SwaggerImport() {
 const handleFile = (file: File) => {
   if (!file) return;
 
-  // 💡 안전 장치 1: JSON 파일 확장자 및 MIME 타입 정적 검증
+  // 안전 장치 1: JSON 파일 확장자 및 MIME 타입 정적 검증
   if (file.type !== "application/json" && !file.name.endsWith(".json")) {
     alert("JSON 형식의 파일만 업로드 가능합니다.");
     return;
   }
 
-  // 💡 안전 장치 2: FileReader 인스턴스를 통한 비동기 파일 읽기 스트림 가동
+  // 안전 장치 2: FileReader 인스턴스를 통한 비동기 파일 읽기 스트림 가동
   const reader = new FileReader();
 
   reader.onload = (e) => {
     try {
-      // 💡 문자열 결과물을 명시적 타입 단언(as string) 후 Swagger 규격으로 캐스팅
+      // 문자열 결과물을 명시적 타입 단언(as string) 후 Swagger 규격으로 캐스팅
       const json = JSON.parse(e.target?.result as string) as SwaggerData;
 
       // Zustand 스토어 및 에디터 뼈대 주입 함수 실행

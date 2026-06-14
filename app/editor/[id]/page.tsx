@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDocStore } from "@/store/useDocStore";
 import { useConfigStore } from "@/store/useConfigStore";
 import { useParams, useRouter } from "next/navigation";
@@ -8,6 +8,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import TiptapEditor from "@/components/Editor/TiptapEditor";
 import { requestGithubPush } from "@/lib/github";
+import { useMounted } from "@/hooks/useMounted";
+import { sendNotificationWebhook } from "@/lib/webhook";
 
 export default function EditorPage() {
   const params = useParams();
@@ -16,8 +18,10 @@ export default function EditorPage() {
   const { documents, updateDocument } = useDocStore();
 
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
-  const { selectedRepo, targetDir, extension } = useConfigStore();
+  const { selectedRepo, targetDir, extension, webhookUrl } = useConfigStore();
   const [isPushing, setIsPushing] = useState(false);
+
+  const mounted = useMounted();
 
   const doc = documents.find((d) => d.id === id);
 
@@ -28,7 +32,7 @@ export default function EditorPage() {
 
     if (!owner) {
       alert("GitHub 계정 정보가 없습니다. 다시 연동해 주세요.");
-      router.push("/settings/github");
+      router.push("/settings");
       return;
     }
 
@@ -38,7 +42,7 @@ export default function EditorPage() {
           "GitHub 연동 설정이 되어있지 않습니다. 설정 페이지로 이동하시겠습니까?",
         )
       ) {
-        router.push("/settings/github");
+        router.push("/github");
       }
       return;
     }
@@ -49,7 +53,6 @@ export default function EditorPage() {
       let content = doc.content;
       const savedCodeBlocks: { language: string; code: string }[] = [];
 
-      // 1. 코드 블록 스캔 및 언어 추출 격리
       content = content.replace(
         /<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi,
         (match, attributes, p1) => {
@@ -66,7 +69,6 @@ export default function EditorPage() {
         },
       );
 
-      // 2. Swagger 테이블 변환 (데이터 손실 방지)
       content = content.replace(
         /<table[^>]*>([\s\S]*?)<\/table>/gi,
         (match) => {
@@ -102,7 +104,6 @@ export default function EditorPage() {
         },
       );
 
-      // 3. 일반 HTML 태그 및 리스트 서식 변환 (ol 번호 유지 반영)
       content = content
         .replace(/<h1>([\s\S]*?)<\/h1>/gi, "\n# $1\n")
         .replace(/<h2>([\s\S]*?)<\/h2>/gi, "\n## $1\n")
@@ -125,10 +126,8 @@ export default function EditorPage() {
         })
         .replace(/<li>([\s\S]*?)<\/li>/gi, "\n* $1");
 
-      // 4. 잔여 태그 소거
       content = content.replace(/<\/?[^>]+(>|$)/g, "");
 
-      // 5. 코드 블록 원본 복원 (동적 언어 매핑)
       savedCodeBlocks.forEach((block, index) => {
         content = content.replace(
           `##CODE_BLOCK_PLACEHOLDER_${index}##`,
@@ -136,7 +135,6 @@ export default function EditorPage() {
         );
       });
 
-      // 저장된 설정값을 사용하여 푸시 실행
       await requestGithubPush({
         owner,
         repo: selectedRepo,
@@ -154,28 +152,53 @@ export default function EditorPage() {
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
 
-      alert("🎉 GitHub 푸시가 성공적으로 완료되었습니다!");
+      // 푸시 연동 지연 시간 도중 유저가 가한 최신 편집 내용을 덮어쓰지 않도록
+      // Zustand 스토어의 상시 최신 실시간 상태를 getState()로 직접 읽어와 카테고리만 안전하게 승격합니다.
+      const latestDoc = useDocStore
+        .getState()
+        .documents.find((d) => d.id === id);
+      if (latestDoc) {
+        updateDocument(id, latestDoc.title, latestDoc.content, "Shared");
+      }
+
+      // 저장소 푸시 완료 직후, 유저가 설정한 디스코드/슬랙 웹훅 주소로 실시간 알림 피드 전송
+      if (webhookUrl) {
+        await sendNotificationWebhook({
+          url: webhookUrl,
+          title: doc.title,
+          action: "share",
+          author: session?.user?.name || owner,
+        });
+      }
+
+      alert(
+        "GitHub 푸시 및 실시간 메신저 알림 배포가 성공적으로 완료되었습니다.",
+      );
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "알 수 없는 오류가 발생했습니다.";
-      alert(`❌ 푸시 실패: ${errorMessage}`);
+      alert(`푸시 실패: ${errorMessage}`);
     } finally {
       setIsPushing(false);
     }
   };
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-white dark:bg-slate-950" />;
+  }
+
   if (!doc) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-slate-950 transition-colors">
         <div className="text-center">
-          <p className="text-slate-500 mb-4">
+          <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm font-medium">
             문서를 찾을 수 없거나 불러오는 중입니다.
           </p>
           <Link
             href="/documents"
-            className="text-blue-600 hover:underline font-bold"
+            className="text-blue-600 dark:text-blue-400 hover:underline font-bold text-sm"
           >
             문서함으로 돌아가기
           </Link>
@@ -185,42 +208,44 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* 네비게이션 바 */}
-      <nav className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden">
+      <nav className="sticky top-0 z-10 border-b border-slate-100 dark:border-slate-900 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md px-4 md:px-6 py-3 md:py-4 flex justify-between items-center overflow-hidden transition-colors">
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <Link
             href="/documents"
-            className="text-slate-400 hover:text-slate-600 font-medium transition-colors whitespace-nowrap text-xs md:text-sm"
+            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 font-medium transition-colors whitespace-nowrap text-xs md:text-sm"
           >
             ← <span className="hidden sm:inline">목록</span>
           </Link>
-          <span className="text-slate-200 flex-shrink-0">|</span>
-          <span className="font-black text-base md:text-xl tracking-tighter whitespace-nowrap flex-shrink-0">
-            Dev<span className="text-blue-600">Flow</span>
+          <span className="text-slate-200 dark:text-slate-800 flex-shrink-0">
+            |
+          </span>
+          <span className="font-black text-base md:text-xl tracking-tighter whitespace-nowrap flex-shrink-0 text-slate-900 dark:text-slate-50">
+            Dev<span className="text-blue-600 dark:text-blue-500">Flow</span>
           </span>
         </div>
 
-        {/* 중간 구역: 제목 입력창 */}
+        {/* 제목 입력창 */}
         <div className="flex-1 min-w-0 mx-2 md:mx-4">
           <input
             type="text"
             value={doc.title}
             onChange={(e) => updateDocument(id, e.target.value, doc.content)}
-            className="w-full text-slate-700 font-bold focus:outline-none bg-transparent 
-              border-b border-transparent hover:border-slate-200 focus:border-blue-300
-              text-sm md:text-base truncate transition-all"
+            className="w-full text-slate-700 dark:text-slate-200 font-semibold focus:outline-none bg-transparent 
+              border-b border-transparent hover:border-slate-100 dark:hover:border-slate-800 focus:border-blue-300 dark:focus:border-blue-500
+              text-xs md:text-sm truncate transition-all py-1"
             placeholder="제목 없는 문서"
           />
         </div>
 
-        {/* 오른쪽 구역: GitHub 푸시 버튼 */}
+        {/* GitHub 푸시 버튼 제어 영역 */}
         <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
           <button
             onClick={handleGithubPush}
             disabled={isPushing}
-            className={`px-3 md:px-5 py-1.5 md:py-2 text-white text-xs md:text-sm font-bold rounded-lg shadow-lg transition-all active:scale-95 whitespace-nowrap
-              ${isPushing ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"}
+            className={`px-3 md:px-5 py-1.5 md:py-2 text-white text-xs md:text-sm font-bold rounded-lg shadow-lg transition-all active:scale-95 whitespace-nowrap cursor-pointer
+              ${isPushing ? "bg-slate-400 dark:bg-slate-700 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"}
             `}
           >
             {isPushing ? "푸시 중..." : "GitHub로 푸시"}
@@ -228,17 +253,18 @@ export default function EditorPage() {
         </div>
       </nav>
 
-      {/* 에디터 메인 영역 */}
+      {/* 에디터 본문 및 타이틀 구역 */}
       <main className="max-w-5xl mx-auto py-8 md:py-12 px-6 md:px-8">
         <header className="mb-8 md:mb-10 border-l-4 border-blue-600 pl-5 md:pl-6">
-          <p className="text-blue-600 font-bold mb-1 text-xs md:text-sm tracking-widest uppercase">
+          <p className="text-blue-600 dark:text-blue-400 font-bold mb-1 text-xs md:text-sm tracking-widest uppercase">
             Prototype V0.1
           </p>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
             API Documentation Editor
           </h2>
         </header>
 
+        {/* Tiptap 에디터 본체 컴포넌체 */}
         <TiptapEditor
           key={id}
           content={doc.content}

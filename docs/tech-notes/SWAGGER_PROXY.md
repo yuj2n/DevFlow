@@ -9,11 +9,12 @@
 ## 2. 주요 설정 단계
 
 ### 2.1 Next.js 15 서버 사이드 프록시 라우터 구현
+
 클라이언트의 요청을 받아 외부 Swagger URL로 데이터를 대신 요청하고 결과를 반환하는 API 라우터를 생성합니다. 외부 URL을 서버가 대신 호출하는 특성상 발생할 수 있는 내부망 침투(SSRF) 공격을 방어하기 위해 프로토콜 검증, 사설 IP 및 로컬 호스트 대역 차단 패턴이 포함되어 있으며, 리소스 고갈을 막기 위해 최대 컨텐츠 길이 및 리다이렉트 횟수 제한이 적용되어 있습니다.
 
 파일명: `app/api/proxy-swagger/route.ts`
 
-```TypeScript
+````TypeScript
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
     console.error("Swagger Proxy Error:", errorMessage);
-    
+
     return NextResponse.json(
       { error: "데이터를 가져오지 못했습니다.", details: errorMessage },
       { status: 500 },
@@ -92,7 +93,7 @@ const handleImport = async () => {
   setIsLoading(true);
 
   try {
-    // 💡 외부 주소를 바로 호출하지 않고, 내부 프록시 주소에 쿼리로 래핑하여 전송
+    // 외부 주소를 바로 호출하지 않고, 내부 프록시 주소에 쿼리로 래핑하여 전송
     const response = await axios.get<SwaggerData>(
       `/api/proxy-swagger?url=${encodeURIComponent(url)}`,
     );
@@ -103,7 +104,7 @@ const handleImport = async () => {
     setIsLoading(false);
   }
 };
-```
+````
 
 ## 3. 주의사항
 

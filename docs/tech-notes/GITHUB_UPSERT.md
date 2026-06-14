@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const octokit = new Octokit({ auth: accessToken });
   let currentSha: string | undefined = undefined;
 
-  // 💡 Phase 1: 원격 저장소에 동일 경로의 파일이 이미 존재하는지 검사
+  // Phase 1: 원격 저장소에 동일 경로의 파일이 이미 존재하는지 검사
   try {
     const { data } = await octokit.rest.repos.getContent({
       owner,
@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
       ref: branch,
     });
 
-    // 💡 파일이 이미 존재한다면 해당 파일의 고유 SHA 값을 추출하여 수정 모드로 전환
+    // 파일이 이미 존재한다면 해당 파일의 고유 SHA 값을 추출하여 수정 모드로 전환
     if (!Array.isArray(data) && data.type === "file") {
       currentSha = data.sha;
     }
   } catch (error: any) {
-    // 💡 404 에러인 경우 파일이 존재하지 않는 것이므로 SHA 없이 신규 생성 모드로 진입
+    // 404 에러인 경우 파일이 존재하지 않는 것이므로 SHA 없이 신규 생성 모드로 진입
     if (error.status !== 404) {
       return NextResponse.json(
         { error: "원격 저장소 조회 실패" },
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 💡 Phase 2: SHA 탑재 여부에 따른 조건부 파일 생성 및 업데이트(Create or Update)
+  // Phase 2: SHA 탑재 여부에 따른 조건부 파일 생성 및 업데이트(Create or Update)
   try {
     await octokit.rest.repos.createOrUpdateFileContents({
       owner,
@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
       message: currentSha
         ? "🗂️ [Update] DevFlow 문서 편집본 동기화"
         : "🚀 [Create] DevFlow 새 문서 배포",
-      content: Buffer.from(content).toString("base64"), // 💡 깃허브 API 규격에 맞춘 Base64 필수 인코딩
+      content: Buffer.from(content).toString("base64"), // 깃허브 API 규격에 맞춘 Base64 필수 인코딩
       branch,
-      sha: currentSha, // 💡 undefined인 경우 신규 생성, 값이 있으면 덮어쓰기로 자동 처리됨
+      sha: currentSha, // undefined인 경우 신규 생성, 값이 있으면 덮어쓰기로 자동 처리됨
     });
 
     return NextResponse.json({ success: true });
