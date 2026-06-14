@@ -142,7 +142,7 @@ const TEMPLATES = [
 export default function DocumentListPage() {
   const { data: session } = useSession();
   const { documents, addDocument, deleteDocument } = useDocStore();
-  const { targetDir, namingPattern } = useConfigStore();
+  const { targetDir, namingPattern, selectedRepo } = useConfigStore();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"All" | "Personal" | "Shared">(
@@ -154,22 +154,32 @@ export default function DocumentListPage() {
   const mounted = useMounted();
 
   const fetchGitHubDocuments = async () => {
-    if (!session || !session.user) return;
+    if (!session || !session.user || !session.user.username) return;
+
+    // 선택된 레포가 아예 없을 시 불필요한 API 호출을 차단하고 격리
+    if (!selectedRepo) {
+      console.log("선택된 GitHub 저장소가 없어 목록 페칭을 스킵합니다.");
+      setGithubDocs([]);
+      return;
+    }
 
     setIsRepoLoading(true);
     try {
       const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
+
+      // 원래 주소를 안정적으로 냅두되,
+      // 코드래빗이 요구한 selectedRepo와 path 파라미터를 정확하게 결합하여 송출합니다.
       const response = await axios.get<GitHubFile[]>(
-        `/api/github-repos?path=${encodeURIComponent(normalizedDir)}`,
+        `/api/github-repos?repo=${encodeURIComponent(selectedRepo)}&path=${encodeURIComponent(normalizedDir)}`,
       );
 
       const formattedGitDocs = response.data
         .filter(
-          (file) =>
+          (file: GitHubFile) =>
             file.type === "file" &&
             (file.name.endsWith(".md") || file.name.endsWith(".json")),
         )
-        .map((file, index) => ({
+        .map((file: GitHubFile, index: number) => ({
           id: `github-${file.sha ? file.sha : String(index)}`,
           title: file.name.replace(".md", "").replace(".json", ""),
           content: "",
@@ -182,6 +192,7 @@ export default function DocumentListPage() {
       setGithubDocs(formattedGitDocs);
     } catch (error) {
       console.error("깃허브 원격 데이터를 가져오는데 실패했습니다:", error);
+      setGithubDocs([]);
     } finally {
       setIsRepoLoading(false);
     }
@@ -190,7 +201,6 @@ export default function DocumentListPage() {
   useEffect(() => {
     if (!mounted) return;
 
-    // 로그아웃 상태면 원격 데이터 호출을 시작조차 하지 않고 즉시 빠져나감
     if (!session || !session.user) return;
 
     if (activeTab === "Shared" || activeTab === "All") {
@@ -199,7 +209,7 @@ export default function DocumentListPage() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, targetDir, mounted, session]);
+  }, [activeTab, targetDir, selectedRepo, mounted, session]);
 
   const handleSelectTemplate = (template: (typeof TEMPLATES)[0]) => {
     const now = new Date();
@@ -230,21 +240,24 @@ export default function DocumentListPage() {
 
   const getFilteredDocuments = (): LocalOrRemoteDoc[] => {
     const localPersonal = documents.filter(
-      (doc) => (doc.category || "Personal") === "Personal",
+      (doc: LocalOrRemoteDoc) => (doc.category || "Personal") === "Personal",
     );
-    const localShared = documents.filter((doc) => doc.category === "Shared");
+    const localShared = documents.filter(
+      (doc: LocalOrRemoteDoc) => doc.category === "Shared",
+    );
 
-    // 로그아웃 상태면 깃허브 원격 파일 결합부를 완전히 배제하여 안전하게 리턴합니다.
     const effectiveGithubDocs = session && session.user ? githubDocs : [];
 
     if (activeTab === "Personal") return localPersonal;
     if (activeTab === "Shared") {
       return [...localShared, ...effectiveGithubDocs].filter(
-        (doc, index, self) => self.findIndex((d) => d.id === doc.id) === index,
+        (doc: LocalOrRemoteDoc, index: number, self: LocalOrRemoteDoc[]) =>
+          self.findIndex((d: LocalOrRemoteDoc) => d.id === doc.id) === index,
       );
     }
     return [...localPersonal, ...localShared, ...effectiveGithubDocs].filter(
-      (doc, index, self) => self.findIndex((d) => d.id === doc.id) === index,
+      (doc: LocalOrRemoteDoc, index: number, self: LocalOrRemoteDoc[]) =>
+        self.findIndex((d: LocalOrRemoteDoc) => d.id === doc.id) === index,
     );
   };
 
