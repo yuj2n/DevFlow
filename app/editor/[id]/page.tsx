@@ -152,7 +152,14 @@ export default function EditorPage() {
         message: `DevFlow: ${doc.title} 문서 업데이트`,
       });
 
-      updateDocument(doc.id, doc.title, doc.content, "Shared");
+      // 푸시 연동 지연 시간 도중 유저가 가한 최신 편집 내용을 덮어쓰지 않도록
+      // Zustand 스토어의 상시 최신 실시간 상태를 getState()로 직접 읽어와 카테고리만 안전하게 승격합니다.
+      const latestDoc = useDocStore
+        .getState()
+        .documents.find((d) => d.id === id);
+      if (latestDoc) {
+        updateDocument(id, latestDoc.title, latestDoc.content, "Shared");
+      }
 
       // 저장소 푸시 완료 직후, 유저가 설정한 디스코드/슬랙 웹훅 주소로 실시간 알림 피드 전송
       if (webhookUrl) {
@@ -257,7 +264,7 @@ export default function EditorPage() {
           </h2>
         </header>
 
-        {/* Tiptap 에디터 본체 컴포넌트 */}
+        {/* Tiptap 에디터 본체 컴포넌체 */}
         <TiptapEditor
           key={id}
           content={doc.content}
