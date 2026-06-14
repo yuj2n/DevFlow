@@ -16,6 +16,8 @@ Next.js는 이미지 최적화(LCP 개선)와 보안을 위해, 허용되지 않
 
 `next.config.ts` 파일에서 `remotePatterns`를 정의하여 신뢰할 수 있는 도메인을 명시합니다.
 
+링크: https://github.com/yuj2n/DevFlow/blob/main/next.config.ts
+
 ```typescript
 // next.config.ts
 import type { NextConfig } from "next";

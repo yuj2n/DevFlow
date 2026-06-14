@@ -10,6 +10,8 @@ Next.js의 클라이언트 사이드 네비게이션 훅인 `usePathname`을 사
 
 ### 2.1 현재 경로 감지
 
+링크: https://github.com/yuj2n/DevFlow/blob/main/components/Navigation/SideTabBar.tsx
+
 `next/navigation` 모듈에서 제공하는 `usePathname` 훅을 사용합니다. 이 훅은 반드시 `"use client"` 지시어가 포함된 컴포넌트에서만 동작합니다.
 
 ```tsx

@@ -12,7 +12,8 @@ GitHub REST API 문서 생성 스펙(`PUT /repos/{owner}/{repo}/contents/{path}`
 
 원격 저장소의 파일 존재 여부를 사전에 스캔하여 결함 없는 커밋 상태를 유지하는 파일 전송 레이어를 구축합니다.
 
-**파일명: `app/api/github-push/route.ts` 내부 일부**
+파일명: `app/api/github-push/route.ts` 내부 일부
+링크: https://github.com/yuj2n/DevFlow/blob/main/app/api/github-push/route.ts
 
 ```typescript
 import { NextRequest, NextResponse } from "next/server";

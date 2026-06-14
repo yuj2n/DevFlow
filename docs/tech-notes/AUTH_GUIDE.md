@@ -44,7 +44,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 NextAuth에서 기본으로 제공하지 않는 속성(예: `accessToken`)을 사용하기 위해서는 타입스크립트의 **선언 병합(Declaration Merging)** 기능을 활용해야 합니다.
 
-**파일명: `types/next-auth.d.ts**`
+파일명: `types/next-auth.d.ts`
+링크: https://github.com/yuj2n/DevFlow/blob/main/types/next-auth.d.ts
 
 ```typescript
 import "next-auth";

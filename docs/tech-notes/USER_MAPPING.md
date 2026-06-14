@@ -37,7 +37,8 @@ callbacks: {
 
 확장된 `username` 필드를 타입스크립트가 인식할 수 있도록 인터페이스를 재정의합니다.
 
-**파일명: `types/next-auth.d.ts**`
+파일명: `types/next-auth.d.ts`
+링크: https://github.com/yuj2n/DevFlow/blob/main/app/api/auth/%5B...nextauth%5D/route.ts
 
 ```typescript
 import "next-auth";
