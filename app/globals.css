@@ -105,7 +105,7 @@ html body .prose li p {
   margin-bottom: 1.5rem !important;
 }
 
-.prose pre dark:border-slate-800 {
+.dark .prose pre {
   border-color: #2e3440 !important;
 }
 
