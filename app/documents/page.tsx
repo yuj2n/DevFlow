@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useDocStore } from "@/store/useDocStore";
 import { useConfigStore } from "@/store/useConfigStore";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Trash2,
@@ -139,6 +140,7 @@ const TEMPLATES = [
 ];
 
 export default function DocumentListPage() {
+  const { data: session } = useSession();
   const { documents, addDocument, deleteDocument } = useDocStore();
   const { targetDir, namingPattern } = useConfigStore();
   const router = useRouter();
@@ -152,6 +154,8 @@ export default function DocumentListPage() {
   const mounted = useMounted();
 
   const fetchGitHubDocuments = async () => {
+    if (!session || !session.user) return;
+
     setIsRepoLoading(true);
     try {
       const normalizedDir = (targetDir ?? "").replace(/^\/+|\/+$/g, "");
@@ -166,7 +170,6 @@ export default function DocumentListPage() {
             (file.name.endsWith(".md") || file.name.endsWith(".json")),
         )
         .map((file, index) => ({
-          // 비산술적 3항 연산자 분기와 String 정적 변환을 통해 타입 연산 에러 완벽 차단
           id: `github-${file.sha ? file.sha : String(index)}`,
           title: file.name.replace(".md", "").replace(".json", ""),
           content: "",
@@ -187,13 +190,16 @@ export default function DocumentListPage() {
   useEffect(() => {
     if (!mounted) return;
 
+    // 로그아웃 상태면 원격 데이터 호출을 시작조차 하지 않고 즉시 빠져나감
+    if (!session || !session.user) return;
+
     if (activeTab === "Shared" || activeTab === "All") {
       const timer = setTimeout(() => {
         fetchGitHubDocuments();
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, targetDir, mounted]);
+  }, [activeTab, targetDir, mounted, session]);
 
   const handleSelectTemplate = (template: (typeof TEMPLATES)[0]) => {
     const now = new Date();
@@ -228,13 +234,16 @@ export default function DocumentListPage() {
     );
     const localShared = documents.filter((doc) => doc.category === "Shared");
 
+    // 로그아웃 상태면 깃허브 원격 파일 결합부를 완전히 배제하여 안전하게 리턴합니다.
+    const effectiveGithubDocs = session && session.user ? githubDocs : [];
+
     if (activeTab === "Personal") return localPersonal;
     if (activeTab === "Shared") {
-      return [...localShared, ...githubDocs].filter(
+      return [...localShared, ...effectiveGithubDocs].filter(
         (doc, index, self) => self.findIndex((d) => d.id === doc.id) === index,
       );
     }
-    return [...localPersonal, ...localShared, ...githubDocs].filter(
+    return [...localPersonal, ...localShared, ...effectiveGithubDocs].filter(
       (doc, index, self) => self.findIndex((d) => d.id === doc.id) === index,
     );
   };
@@ -303,7 +312,7 @@ export default function DocumentListPage() {
           ))}
         </div>
 
-        {(activeTab === "Shared" || activeTab === "All") && (
+        {!!session && (activeTab === "Shared" || activeTab === "All") && (
           <button
             onClick={fetchGitHubDocuments}
             disabled={isRepoLoading}
