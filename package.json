@@ -39,5 +39,18 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "@tiptap/core": "3.23.1",
+      "@tiptap/pm": "3.23.1",
+      "@tiptap/react": "3.23.1",
+      "@tiptap/starter-kit": "3.23.1",
+      "@tiptap/extension-code-block-lowlight": "3.23.1",
+      "@tiptap/extension-table": "3.23.1",
+      "@tiptap/extension-table-cell": "3.23.1",
+      "@tiptap/extension-table-header": "3.23.1",
+      "@tiptap/extension-table-row": "3.23.1"
+    }
   }
 }
